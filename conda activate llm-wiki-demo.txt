@@ -1,0 +1,59 @@
+LLM Wiki Agent Workflow Demo - Run Commands
+===========================================
+
+Project folder:
+C:\Users\gn041\Desktop\Side Project\LLM WiKi_karpathy
+
+
+Start the demo
+--------------
+
+1. Open PowerShell.
+
+2. Go to the project folder:
+
+cd "C:\Users\gn041\Desktop\Side Project\LLM WiKi_karpathy"
+
+3. Activate the conda environment:
+
+conda activate llm-wiki-demo
+
+4. Optional: set Gemini API key for the current PowerShell session:
+
+$env:GEMINI_API_KEY="your-gemini-api-key"
+
+5. Start Streamlit:
+
+streamlit run app.py
+
+6. Open the app:
+
+http://localhost:8501
+
+
+If conda activate does not work in this shell
+--------------------------------------------
+
+Run Streamlit through conda directly:
+
+conda run -n llm-wiki-demo streamlit run app.py
+
+
+Stop the demo
+-------------
+
+In the PowerShell window running Streamlit, press:
+
+Ctrl + C
+
+
+Installed environment
+---------------------
+
+Environment name:
+llm-wiki-demo
+
+Reinstall or update dependencies:
+
+conda activate llm-wiki-demo
+pip install -r requirements.txt

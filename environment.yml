@@ -1,0 +1,9 @@
+name: llm-wiki-demo
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - streamlit>=1.35
+      - google-genai>=1.0

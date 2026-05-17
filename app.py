@@ -101,6 +101,19 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def display_markdown_body(text: str) -> str:
+    """Strip leading YAML frontmatter so previews don't show metadata as text."""
+    if text.startswith("---\n"):
+        end = text.find("\n---", 4)
+        if end != -1:
+            return text[end + 4:].lstrip("\n").lstrip()
+    if text.startswith("---\r\n"):
+        end = text.find("\r\n---", 5)
+        if end != -1:
+            return text[end + 5:].lstrip()
+    return text
+
+
 def write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -257,6 +270,9 @@ def create_raw_source(title: str, body: str, source: str = "manual paste") -> Pa
     today = date.today().isoformat()
     clean_title = title.strip() or "Untitled Source"
     target = RAW_DIR / f"{slugify(clean_title)}.md"
+    body_stripped = body.strip()
+    # Avoid duplicating the H1 when the fetched body already opens with a heading.
+    header_block = "" if body_stripped.startswith("# ") else f"# {clean_title}\n\n"
     content = f"""---
 title: {clean_title}
 source: {source}
@@ -264,9 +280,7 @@ collected: {today}
 published: Unknown
 ---
 
-# {clean_title}
-
-{body.strip()}
+{header_block}{body_stripped}
 """
     write_text(target, content)
     append_log("source", f"Added raw source: {clean_title}", [f"Created: {page_link(target)}"])
@@ -274,16 +288,31 @@ published: Unknown
 
 
 def fetch_url_as_markdown(url: str) -> tuple[str, str]:
-    """Fetch a URL and return (title, plain-text body). Stdlib only, no deps."""
+    """Fetch a URL and return (title, plain-text body). Stdlib only, no deps.
+
+    Title selection (in order of preference):
+      1. <title> tag from HTML
+      2. First `# heading` in the body (covers raw markdown URLs e.g. gist/raw)
+      3. "domain - last_path_segment"  (e.g. "kenming.idv.tw - karpathy-llm-wiki-fundamental")
+      4. The full URL (last resort)
+    """
     import urllib.request
+    from urllib.parse import urlparse
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 LLM-Wiki-Demo"})
     with urllib.request.urlopen(req, timeout=20) as response:
         charset = response.headers.get_content_charset() or "utf-8"
-        raw_html = response.read().decode(charset, errors="replace")
-    title_match = re.search(r"<title[^>]*>(.*?)</title>", raw_html, flags=re.IGNORECASE | re.DOTALL)
-    title = html.unescape(title_match.group(1).strip()) if title_match else url
-    title = " ".join(title.split())[:200]
-    body = re.sub(r"<(script|style|noscript)[^>]*>.*?</\1>", "", raw_html, flags=re.IGNORECASE | re.DOTALL)
+        raw_text = response.read().decode(charset, errors="replace")
+
+    title: str | None = None
+    title_match = re.search(r"<title[^>]*>(.*?)</title>", raw_text, flags=re.IGNORECASE | re.DOTALL)
+    if title_match:
+        candidate = html.unescape(title_match.group(1).strip())
+        candidate = " ".join(candidate.split())
+        if candidate:
+            title = candidate
+
+    # Strip HTML if present
+    body = re.sub(r"<(script|style|noscript)[^>]*>.*?</\1>", "", raw_text, flags=re.IGNORECASE | re.DOTALL)
     body = re.sub(r"<br\s*/?>", "\n", body, flags=re.IGNORECASE)
     body = re.sub(r"</(p|div|h[1-6]|li|ul|ol|tr|td|th|article|section|header|footer|blockquote)[^>]*>",
                   "\n\n", body, flags=re.IGNORECASE)
@@ -291,7 +320,22 @@ def fetch_url_as_markdown(url: str) -> tuple[str, str]:
     body = html.unescape(body)
     body = re.sub(r"[ \t]+\n", "\n", body)
     body = re.sub(r"\n{3,}", "\n\n", body)
-    return title, body.strip()
+    body = body.strip()
+
+    # Fallback chain when <title> was missing
+    if not title:
+        h1 = re.search(r"^#\s+(.+?)\s*$", body, flags=re.MULTILINE)
+        if h1:
+            title = h1.group(1).strip()
+    if not title:
+        parsed = urlparse(url)
+        last_seg = [seg for seg in parsed.path.split("/") if seg]
+        if last_seg:
+            title = f"{parsed.netloc} - {last_seg[-1]}"
+        else:
+            title = parsed.netloc or url
+    title = title[:200]
+    return title, body
 
 
 def append_log(kind: str, message: str, items: list[str] | None = None) -> None:
@@ -771,6 +815,29 @@ Full content of the matching wiki pages:
     return target, content
 
 
+def parse_log_entries(text: str) -> list[dict]:
+    """Parse wiki/log.md into structured rows: date, type, message, details."""
+    entries: list[dict] = []
+    current: dict | None = None
+    header = re.compile(r"^##\s+\[([^\]]+)\]\s+(\S+)\s*\|\s*(.+?)\s*$")
+    for line in text.splitlines():
+        m = header.match(line)
+        if m:
+            if current:
+                entries.append(current)
+            current = {
+                "date": m.group(1).strip(),
+                "type": m.group(2).strip(),
+                "message": m.group(3).strip(),
+                "details": [],
+            }
+        elif current is not None and line.strip().startswith("- "):
+            current["details"].append(line.strip()[2:].strip())
+    if current:
+        entries.append(current)
+    return entries
+
+
 def last_log_message_for(kind: str) -> str | None:
     if not LOG_FILE.exists():
         return None
@@ -1004,6 +1071,20 @@ def configure_page() -> None:
         .tag-personal { background: rgba(242, 204, 96, 0.18); border-color: #f2cc60; color: #ffe7a8; }
         .tag-concepts { background: rgba(255, 158, 100, 0.18); border-color: #ff9e64; color: #ffd4b8; }
         .tag-syntheses { background: rgba(248, 113, 113, 0.18); border-color: #f87171; color: #ffc6c6; }
+        .log-table { width: 100%; font-size: 0.86rem; border-collapse: collapse; }
+        .log-table th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.3); font-weight: 600; color: rgba(220,220,220,0.85); }
+        .log-table td { padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.15); vertical-align: top; }
+        .log-table tr:hover { background: rgba(255,255,255,0.02); }
+        .log-date { color: rgba(180,180,180,0.75); white-space: nowrap; font-family: monospace; }
+        .log-type { display: inline-block; padding: 0.05rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; }
+        .log-type-ingest { background: rgba(63, 185, 80, 0.18); color: #b6f0c4; }
+        .log-type-lint { background: rgba(242, 204, 96, 0.18); color: #ffe7a8; }
+        .log-type-concept { background: rgba(255, 158, 100, 0.18); color: #ffd4b8; }
+        .log-type-query { background: rgba(210, 168, 255, 0.18); color: #ead2ff; }
+        .log-type-source { background: rgba(88, 166, 255, 0.18); color: #b6dcff; }
+        .log-type-rebuild { background: rgba(139, 148, 158, 0.18); color: #c9d1d9; }
+        .log-type-init { background: rgba(139, 148, 158, 0.18); color: #c9d1d9; }
+        .log-details { color: rgba(180,180,180,0.7); font-size: 0.78rem; font-family: monospace; }
         .source-group {
             border: 1px solid rgba(128, 128, 128, 0.28);
             border-radius: 10px;
@@ -1084,7 +1165,12 @@ def render_sources() -> None:
                 else:
                     st.warning("Paste some content first.")
         with st.expander("Fetch from URL"):
-            url = st.text_input("URL", placeholder="https://example.com/article")
+            url = st.text_input("URL", placeholder="https://example.com/article", key="fetch_url_input")
+            override_title = st.text_input(
+                "Title override (optional)",
+                placeholder="leave blank to auto-detect from <title> or first # heading",
+                key="fetch_title_override",
+            )
             if st.button("Fetch and save to raw/", use_container_width=True, key="fetch_url_btn"):
                 clean_url = url.strip()
                 if not clean_url:
@@ -1095,14 +1181,15 @@ def render_sources() -> None:
                     try:
                         with st.spinner("Fetching..."):
                             fetched_title, fetched_body = fetch_url_as_markdown(clean_url)
-                        target = create_raw_source(fetched_title, fetched_body, source=clean_url)
-                        st.success(f"Created {page_link(target)}")
+                        final_title = override_title.strip() or fetched_title
+                        target = create_raw_source(final_title, fetched_body, source=clean_url)
+                        st.success(f"Created {page_link(target)}  (title: {final_title})")
                         st.rerun()
                     except Exception as error:
                         st.error(f"Fetch failed: {error}")
     with col_b:
         if sources:
-            st.markdown(read_text(selected))
+            st.markdown(display_markdown_body(read_text(selected)))
 
 
 def render_ingest(use_gemini: bool, api_key: str, model: str) -> None:
@@ -1322,12 +1409,12 @@ def render_wiki() -> None:
         format_func=lambda path: f"{(_extract_source_title_from_frontmatter(read_text(path)) or path.stem)} — {(_agent_label_from_frontmatter(read_text(path)) or path.relative_to(WIKI_DIR).parts[0].replace('-', ' ').title())}",
         label_visibility="collapsed",
     )
-    st.markdown(read_text(selected))
+    st.markdown(display_markdown_body(read_text(selected)))
 
     with st.expander("System pages: index and log"):
         for page in system_pages():
             st.markdown(f"### {page_link(page)}")
-            st.markdown(read_text(page))
+            st.markdown(display_markdown_body(read_text(page)))
 
 
 def render_concepts(use_gemini: bool, api_key: str, model: str) -> None:
@@ -1373,7 +1460,7 @@ def render_concepts(use_gemini: bool, api_key: str, model: str) -> None:
                 format_func=lambda p: extract_title(read_text(p), p.stem),
                 key="concept_view_select",
             )
-            st.markdown(read_text(selected))
+            st.markdown(display_markdown_body(read_text(selected)))
 
 
 def render_graph() -> None:
@@ -1467,7 +1554,67 @@ def render_health() -> None:
     st.write("- `wiki/log.md` should record ingest, query archive, and lint operations.")
     st.write("- Orphan pages can be resolved by ingesting another agent on the same source, or by compiling a concept page that references them.")
     st.markdown("### Log")
-    st.markdown(read_text(LOG_FILE))
+    log_text = read_text(LOG_FILE) if LOG_FILE.exists() else ""
+    entries = parse_log_entries(log_text)
+    if not entries:
+        st.info("No log entries yet.")
+    else:
+        type_colour_class = {
+            "ingest": "log-type-ingest", "lint": "log-type-lint",
+            "concept": "log-type-concept", "query": "log-type-query",
+            "source": "log-type-source", "rebuild": "log-type-rebuild",
+            "init": "log-type-init",
+        }
+        # All types present, for the filter dropdown
+        all_types = sorted({e["type"] for e in entries})
+        col_top1, col_top2 = st.columns([0.6, 0.4])
+        with col_top1:
+            st.caption(f"{len(entries)} entries (newest first)")
+        with col_top2:
+            picked = st.multiselect(
+                "Filter by type",
+                all_types,
+                default=all_types,
+                label_visibility="collapsed",
+                key="log_filter_types",
+            )
+        filtered = [e for e in entries if e["type"] in picked]
+        ordered = list(reversed(filtered))
+        SHOW_LIMIT = 25
+        head = ordered[:SHOW_LIMIT]
+        tail = ordered[SHOW_LIMIT:]
+        rows_html = ['<table class="log-table"><thead><tr><th>Date</th><th>Type</th><th>Message</th></tr></thead><tbody>']
+        for e in head:
+            tcls = type_colour_class.get(e["type"], "log-type-init")
+            msg = html.escape(e["message"])
+            if e["details"]:
+                detail_str = " &middot; ".join(html.escape(d) for d in e["details"])
+                msg += f'<br/><span class="log-details">{detail_str}</span>'
+            rows_html.append(
+                f'<tr><td class="log-date">{html.escape(e["date"])}</td>'
+                f'<td><span class="log-type {tcls}">{html.escape(e["type"])}</span></td>'
+                f'<td>{msg}</td></tr>'
+            )
+        rows_html.append("</tbody></table>")
+        st.markdown("\n".join(rows_html), unsafe_allow_html=True)
+        if tail:
+            with st.expander(f"Older entries ({len(tail)})"):
+                more_rows = ['<table class="log-table"><tbody>']
+                for e in tail:
+                    tcls = type_colour_class.get(e["type"], "log-type-init")
+                    msg = html.escape(e["message"])
+                    if e["details"]:
+                        detail_str = " &middot; ".join(html.escape(d) for d in e["details"])
+                        msg += f'<br/><span class="log-details">{detail_str}</span>'
+                    more_rows.append(
+                        f'<tr><td class="log-date">{html.escape(e["date"])}</td>'
+                        f'<td><span class="log-type {tcls}">{html.escape(e["type"])}</span></td>'
+                        f'<td>{msg}</td></tr>'
+                    )
+                more_rows.append("</tbody></table>")
+                st.markdown("\n".join(more_rows), unsafe_allow_html=True)
+    with st.expander("Raw log.md (append-only source of truth)"):
+        st.code(log_text or "(empty)", language="markdown")
 
 
 def main() -> None:

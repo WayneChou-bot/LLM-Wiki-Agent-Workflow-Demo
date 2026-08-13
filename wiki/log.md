@@ -175,3 +175,15 @@
 
 ## [2026-05-17] ingest | Personal Knowledge Agent processed LLM Wiki
 - Updated: wiki/personal/llm-wiki.md
+
+## [2026-08-13] concept | Compiled concept: knowledge-compounding
+- Updated: wiki/concepts/knowledge-compounding.md
+- Note: compiled by Claude (Cowork session), outside the Streamlit app
+
+## [2026-08-13] concept | Compiled concept: schema-as-contract
+- Updated: wiki/concepts/schema-as-contract.md
+- Note: compiled by Claude (Cowork session), outside the Streamlit app
+
+## [2026-08-13] rebuild | Rebuilt wiki/index.md concepts section
+
+## [2026-08-13] lint | 0 issues found, 0 auto-fixed

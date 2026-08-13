@@ -277,6 +277,38 @@ section{max-width:1080px;margin:0 auto;padding:5.5rem 1.4rem 1rem}
   background:rgba(144,133,233,.08);animation:fadeIn .5s}
 .syn-card .fn{font-family:var(--mono);color:var(--concept);font-size:.76rem}
 
+
+/* log timeline */
+.tl{border-left:2px solid var(--grid);margin:1rem 0 0 .4rem;padding-left:1.2rem}
+.tl-e{position:relative;margin-bottom:1rem}
+.tl-dot{position:absolute;left:-1.71rem;top:.35rem;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface)}
+.tl-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.tl-kind{font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--border);border-radius:999px;padding:.06rem .6rem}
+.tl-date{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+.tl-n{font-family:var(--mono);font-size:.7rem;color:var(--log);border:1px solid var(--border);border-radius:999px;padding:.05rem .5rem}
+.tl-msg{font-size:.88rem;color:var(--ink);margin-top:.15rem}
+.tl-item{font-family:var(--mono);font-size:.76rem;color:var(--ink-2);margin-top:.2rem}
+/* lint */
+.lint-row{display:flex;align-items:flex-start;gap:.8rem;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:10px;padding:.7rem 1rem;margin-top:.6rem;animation:fadeIn .4s}
+.lint-ico{font-size:1rem;width:1.4rem;text-align:center;flex:none}
+.lint-name{font-size:.88rem;color:var(--ink);font-weight:600}
+.lint-detail{font-size:.8rem;color:var(--ink-2)}
+.lint-row.ok{border-color:rgba(25,158,112,.45)}
+.lint-row.bad{border-color:rgba(230,103,103,.5)}
+.lint-spin{display:inline-block;width:14px;height:14px;border:2px solid var(--grid);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* starter */
+.copy-btn{margin-top:.6rem}
+.starter-steps{counter-reset:st;list-style:none;margin:0}
+.starter-steps li{counter-increment:st;position:relative;padding-left:2.4rem;margin:.9rem 0;color:var(--ink-2);font-size:.92rem}
+.starter-steps li::before{content:counter(st);position:absolute;left:0;top:.05rem;width:1.7rem;height:1.7rem;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--accent);font-weight:700;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center}
+.starter-steps li b{color:var(--ink)}
+#starterTpl{max-height:340px;overflow-y:auto;white-space:pre;font-size:.74rem}
 /* deploy / about */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
 @media(max-width:820px){.two-col{grid-template-columns:1fr}}
@@ -306,6 +338,8 @@ footer a{color:var(--ink-2)}
     <a href="#map"><span data-zh>知識圖譜</span><span data-en>Knowledge Map</span></a>
     <a href="#wiki"><span data-zh>Wiki 瀏覽</span><span data-en>Browse Wiki</span></a>
     <a href="#ask">Ask</a>
+    <a href="#maintain">Lint</a>
+    <a href="#starter"><span data-zh>起步套件</span><span data-en>Starter Kit</span></a>
     <a href="#deploy"><span data-zh>本機版</span><span data-en>Full App</span></a>
   </div>
   <button id="langBtn">EN</button>
@@ -536,6 +570,84 @@ footer a{color:var(--ink-2)}
   </div>
 </section>
 
+<!-- ================= maintain / lint ================= -->
+<section id="maintain">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Lint · Maintain</div>
+    <h2><span data-zh>對 Wiki 執行健檢</span><span data-en>Health-check the Wiki</span></h2>
+    <p><span data-zh>Karpathy 的第三個操作:定期讓 LLM 巡檢知識庫。這裡不是模擬——按下按鈕會即時掃描本站內嵌的所有 wiki 頁面,檢查空頁、index 缺漏、斷鏈與孤兒頁。</span>
+       <span data-en>Karpathy's third operation: periodically have the LLM inspect the knowledge base. This is not a mock — the button scans every wiki page baked into this site, checking for empty pages, missing index entries, broken links, and orphans.</span></p>
+  </div>
+  <div class="sim reveal">
+    <button class="btn btn-primary" id="runLint"><span data-zh>▶ 執行 Lint 健檢</span><span data-en>▶ Run Lint</span></button>
+    <div id="lintChecks"></div>
+    <div class="sim-log" id="lintLog"></div>
+  </div>
+</section>
+
+<!-- ================= starter kit ================= -->
+<section id="starter">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Starter Kit</div>
+    <h2><span data-zh>把這套模式帶回家</span><span data-en>Take the pattern home</span></h2>
+    <p><span data-zh>Karpathy 的 gist 本來就是設計來「複製貼上給你的 LLM Agent」的 idea file。三個步驟,今天就能開始自己的 LLM Wiki。</span>
+       <span data-en>Karpathy's gist was designed to be copy-pasted to your own LLM agent. Three steps and you can start your own LLM Wiki today.</span></p>
+  </div>
+  <div class="two-col">
+    <div class="info-card reveal">
+      <h3><span data-zh>三步驟開始</span><span data-en>Three steps</span></h3>
+      <ol class="starter-steps">
+        <li><span data-zh>建一個資料夾,裡面放 <b>raw/</b>、<b>wiki/</b> 兩個子資料夾和一份 <b>AGENTS.md</b>(或 CLAUDE.md)。</span>
+            <span data-en>Create a folder with <b>raw/</b>, <b>wiki/</b>, and an <b>AGENTS.md</b> (or CLAUDE.md).</span></li>
+        <li><span data-zh>把右邊的模板貼進 AGENTS.md,交給 Claude Code / Codex,和它一起微調規則。</span>
+            <span data-en>Paste the template into AGENTS.md, hand it to Claude Code / Codex, and tune the rules together.</span></li>
+        <li><span data-zh>丟入第一份來源到 raw/,說一聲「ingest」。從此 Agent 負責寫,Wiki 負責記住。</span>
+            <span data-en>Drop your first source into raw/ and say "ingest". From then on the agent writes; the wiki remembers.</span></li>
+      </ol>
+      <p style="margin-top:1rem"><span data-zh>原始概念全文:</span><span data-en>The original idea file: </span>
+        <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" target="_blank" rel="noopener">Karpathy's LLM Wiki gist ↗</a></p>
+    </div>
+    <div class="info-card reveal" style="transition-delay:.1s">
+      <h3><span data-zh>AGENTS.md 起步模板</span><span data-en>AGENTS.md starter template</span></h3>
+      <pre class="codeblock" id="starterTpl"># LLM Wiki Agent Rules (starter)
+
+You maintain a personal knowledge wiki. Follow these
+rules in every session.
+
+## Layers
+- raw/   Immutable sources. Read, never modify.
+- wiki/  Compiled pages. You own this layer:
+         create, update, cross-link.
+- wiki/index.md  Catalog of every page with a
+         one-line summary. Update on every ingest.
+- wiki/log.md    Append-only history. Prefix:
+         ## [YYYY-MM-DD] kind | message
+
+## Operations
+### Ingest
+1. Read one source from raw/.
+2. Extract key information into topic pages
+   under wiki/.
+3. Cross-link related pages, both directions.
+4. Update index.md; append to log.md.
+### Query
+Read index.md first, then relevant pages.
+Answer with citations. Offer to archive valuable
+answers under wiki/syntheses/.
+### Lint
+Report contradictions, stale claims, orphan pages,
+broken links, and missing index entries.
+
+## Conventions
+- Markdown with YAML frontmatter:
+  title, updated, sources.
+- Small focused pages beat long dumps.
+- Link generously; the graph is the product.</pre>
+      <button class="btn btn-ghost copy-btn" id="copyTpl"><span data-zh>📋 複製模板</span><span data-en>📋 Copy template</span></button>
+    </div>
+  </div>
+</section>
+
 <!-- ================= deploy / full app ================= -->
 <section id="deploy">
   <div class="sec-head reveal">
@@ -645,7 +757,8 @@ This index is maintained by the demo app. It lists compiled wiki pages by agent 
 
 ## Concepts
 
-No pages yet.
+- [Knowledge Compounding](wiki/concepts/knowledge-compounding.md) - Why a maintained wiki beats query-time retrieval: knowledge is compiled once and every later operation builds on it.
+- [Schema as Contract](wiki/concepts/schema-as-contract.md) - AGENTS.md / CLAUDE.md as the behavioral contract that turns a chatbot into a disciplined wiki maintainer.
 
 ## Syntheses
 
@@ -790,6 +903,330 @@ This is the key difference: **the wiki is a persistent, compounding artifact.** 
 The tedious part of maintaining a knowledge base is not the reading or the thinking — it's the bookkeeping. Humans abandon wikis because the maintenance burden grows faster than the value. LLMs don't get bored, don't forget to update a cross-reference, and can touch 15 files in one pass. The wiki stays maintained because the cost of maintenance is near zero.
 
 The idea is related in spirit to Vannevar Bush's Memex (1945) — a personal, curated knowledge store with associative trails between documents. The part he couldn't solve was who does the maintenance. The LLM handles that.`},
+"raw/ai-agent-workflow.md": {group:"raw/", fm:{title:"AI Agent Workflow Demo Notes", source:"demo seed", collected:"2026-05-17"}, md:`# AI Agent Workflow Demo Notes
+
+An AI agent workflow can be presented as a sequence of roles that transform raw material into durable knowledge and action.
+
+The programming role extracts implementation patterns, architecture decisions, integration constraints, and reusable code practices. It cares about how a system is built and how future developers can maintain it.
+
+The UI design role extracts user journeys, screen states, interaction controls, visual hierarchy, and usability risks. It cares about whether a user can understand and operate the system.
+
+The project management role extracts goals, scope, dependencies, roadmap, risks, and decisions. It turns raw information into an execution plan.
+
+The personal knowledge role extracts learning loops, reflection prompts, review habits, and reusable mental models. It turns a project into a long-term knowledge asset.
+
+For a demo, the same source can be ingested from different agent perspectives. The result is not one summary, but several durable wiki pages that preserve different kinds of expertise.
+
+The strongest demo pattern is:
+
+1. Ingest a source with the Programming Agent.
+2. Ingest the same source with the UI Design Agent.
+3. Ingest the same source with the Project Manager Agent.
+4. Ask a cross-agent question.
+5. Save the answer as a synthesis page.`},
+"raw/karpathy-llm-wiki-summary.md": {group:"raw/", fm:{title:"Karpathy LLM Wiki Summary", source:"demo seed", collected:"2026-05-17"}, md:`# Karpathy LLM Wiki Summary
+
+An LLM Wiki is a pattern for building personal knowledge bases using LLMs.
+
+Instead of retrieving raw chunks at query time, the LLM incrementally builds and maintains a persistent wiki. New sources are read once, extracted, integrated into existing pages, linked to related concepts, and checked for contradictions.
+
+The human chooses sources, asks questions, and guides emphasis. The LLM performs the maintenance work: summarizing, filing, cross-referencing, updating indexes, and preserving a log.
+
+The basic architecture has three layers:
+
+- Raw sources: immutable source materials.
+- Wiki: compiled markdown pages maintained by the LLM.
+- Schema: instructions that define the structure and workflows.
+
+The basic operations are:
+
+- Ingest: process a new source into the wiki.
+- Query: answer from the compiled wiki and cite pages.
+- Lint: check health, missing links, stale claims, contradictions, and orphan pages.
+
+The key claim is that knowledge should compound. A good answer or synthesis should not disappear into chat history; it can be saved back into the wiki.`},
+"raw/llm-app-development-patterns.md": {group:"raw/", fm:{title:"LLM App Development Patterns", source:"demo seed", collected:"2026-05-17"}, md:`# LLM App Development Patterns
+
+A practical LLM app often separates the user interface, knowledge layer, agent instructions, and model calls.
+
+The user interface should expose a small number of clear operations. In a wiki demo, these operations are usually Sources, Ingest, Wiki, Ask, and Health.
+
+The knowledge layer can begin as markdown files. Raw materials live in \`raw/\`, compiled pages live in \`wiki/\`, and the index/log files help the model navigate and preserve continuity.
+
+The agent instruction layer defines how the system behaves. In Codex this can be \`AGENTS.md\`; in Claude Code it can be \`CLAUDE.md\`; in an Agent Skills setup it can be \`SKILL.md\`.
+
+The model layer can be added later. A deterministic prototype can prove the workflow before connecting an API. After the workflow is clear, the app can call an LLM to perform ingest, answer questions, and lint wiki health.
+
+Streamlit is useful for a local demo because it turns a folder workflow into a browser-based control panel. It is not the knowledge base itself. The markdown files remain the durable artifact.
+
+The recommended first version should avoid vector databases, multi-agent orchestration, and complex automation. It should show the smallest loop that works: raw source in, wiki pages out, question answered, useful answer archived.`},
+"raw/deliberate-practice-notes.md": {group:"raw/", fm:{title:"Deliberate Practice Notes", source:"demo seed", collected:"2026-05-17"}, md:`# Deliberate Practice Notes
+
+Deliberate practice is the structured kind of practice that drives real skill growth. It is not the same as hours logged. The difference matters because most adults plateau by repeating what they can already do.
+
+The four ingredients that define deliberate practice: a clear sub-goal that targets one weakness, immediate feedback that tells you whether the attempt worked, repetition that is hard enough to force adjustment, and a coach or system that points out what to work on next.
+
+A personal learning loop that uses this idea looks like: pick one narrow skill, define a measurable check, run a short session, review what failed, adjust the next session. The session length matters less than the review.
+
+The biggest failure mode is busywork dressed as practice. Reading more articles, watching more talks, attending more meetings — these feel like learning but lack the feedback and adjustment steps. The fix is to ask, after every session, what specifically improved and how you know.
+
+A useful reflection prompt at the end of the week: which sessions actually changed what I can do, and which were just consumption. Track the ratio over time. The goal is not to eliminate consumption — it is to notice when the ratio has tipped too far.
+
+This connects to longer-term knowledge accumulation: deliberate practice builds the underlying skill, but a personal knowledge system captures the lessons so they survive past the practice session. The two work together. Practice generates the experience; the knowledge layer keeps it durable.`},
+"raw/personal-crm-product-brief.md": {group:"raw/", fm:{title:"Personal CRM Product Brief", source:"demo seed", collected:"2026-05-17"}, md:`# Personal CRM Product Brief
+
+A personal CRM is a small system for keeping track of relationships outside of work — friends, family, mentors, weak ties — that would otherwise drift.
+
+The product goal is to help a single user remember context about people: when they last talked, what topics matter to that person, what follow-ups were promised, and what to bring up next time.
+
+The core user journey has three loops. First, capture: after a conversation the user logs a short note about what happened and what to follow up on. Second, recall: before the next interaction the user opens that person's page and re-reads the last few notes. Third, prompt: the system surfaces relationships that have gone quiet and suggests a small reach-out.
+
+A useful MVP scope: one note type, one tag dimension (relationship strength), one reminder rule (no contact in N days). No teams, no shared records, no automation. The system is for one human and their address book.
+
+Risks to highlight in any roadmap: data sensitivity (this is the user's social graph; encryption and local storage matter), churn (people get added but never revisited; the surface needs to invite a daily five-minute pass), and creepiness (reminders that feel like surveillance kill trust).
+
+Dependencies: a stable input method (mobile capture is more important than desktop), a simple data model (people, notes, follow-ups), and a quiet notification system that defaults to weekly rather than daily.
+
+The success metric is not number of people tracked. It is number of relationships where the user can say, six months from now, that the system helped them stay in touch.`},
+"wiki/concepts/knowledge-compounding.md": {group:"wiki/", fm:{title:"Knowledge Compounding", type:"concept", updated:"2026-08-13", by:"Claude (agent session)"}, md:`# Knowledge Compounding
+
+## Summary
+
+The core claim of the LLM Wiki pattern: knowledge should be compiled once and then kept current, so every later ingest, question, and answer builds on everything that came before. Plain RAG rediscovers from scratch on every query; a maintained wiki accumulates.
+
+## Cross-Page Insights
+
+- From \`LLM Wiki\` (raw): "the wiki is a persistent, compounding artifact" — the cross-references already exist and the contradictions are already flagged before any question is asked.
+- From \`Karpathy LLM Wiki Summary\`: a good answer should not disappear into chat history; archiving syntheses back into the wiki is what makes exploration compound like ingested sources do.
+- From \`Deliberate Practice Notes\`: the same loop applied to skills — practice generates the experience, the knowledge layer keeps it durable. Compounding needs a capture step, not just repetition.
+- From the Personal Knowledge lens: prefer repeated small ingests over large, unreviewed dumps — cadence beats volume.
+- From the Project Management lens: decisions and risks tracked in the wiki survive beyond any single demo or meeting.
+
+## Source Pages
+
+- [LLM Wiki — Personal Knowledge](wiki/personal/llm-wiki.md)
+- [LLM Wiki — Programming](wiki/programming/llm-wiki.md)
+- [LLM Wiki — Project Management](wiki/project-management/llm-wiki.md)
+- [Raw: LLM Wiki](raw/llm-wiki.md)
+- [Raw: Karpathy LLM Wiki Summary](raw/karpathy-llm-wiki-summary.md)
+- [Raw: Deliberate Practice Notes](raw/deliberate-practice-notes.md)
+
+## Related Concepts
+
+- [Schema as Contract](wiki/concepts/schema-as-contract.md)`},
+"wiki/concepts/schema-as-contract.md": {group:"wiki/", fm:{title:"Schema as Contract", type:"concept", updated:"2026-08-13", by:"Claude (agent session)"}, md:`# Schema as Contract
+
+## Summary
+
+The schema layer — \`AGENTS.md\` for Codex, \`CLAUDE.md\` for Claude Code, \`SKILL.md\` in an Agent Skills setup — is what turns a general-purpose LLM into a disciplined wiki maintainer. It encodes the structure, conventions, and workflows, and the human and the LLM co-evolve it over time.
+
+## Cross-Page Insights
+
+- From \`LLM Wiki\` (raw): the schema is "the key configuration file" — the difference between a chatbot and a maintainer is written rules, not a better model.
+- From \`LLM App Development Patterns\`: the instruction layer is portable across platforms (\`AGENTS.md\` / \`CLAUDE.md\` / \`SKILL.md\`), while the knowledge layer stays plain markdown either way.
+- From the Programming lens: treat \`AGENTS.md\` as the behavioral contract for future automation — build against the rules, not against the model.
+- From the UI Design lens: exposing a small number of stable operations is the schema made visible to the user.
+- This demo's own \`AGENTS.md\` defines four agent roles and three operations — the multi-perspective remix is itself just a schema choice.
+
+## Source Pages
+
+- [LLM Wiki — Programming](wiki/programming/llm-wiki.md)
+- [LLM Wiki — UI Design](wiki/ui-design/llm-wiki.md)
+- [Raw: LLM Wiki](raw/llm-wiki.md)
+- [Raw: LLM App Development Patterns](raw/llm-app-development-patterns.md)
+
+## Related Concepts
+
+- [Knowledge Compounding](wiki/concepts/knowledge-compounding.md)`},
+"wiki/log.md": {group:"wiki/", fm:null, md:`# Wiki Log
+
+## [2026-05-17] init | Demo scaffold created
+
+- Created initial raw sources, templates, index, and log.
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/agent-workflow-architecture.md
+
+## [2026-05-17] ingest | UI Design Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/ui-design/llm-wiki-demo-interface-patterns.md
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/agent-workflow-architecture.md
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] ingest | Project Manager Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/project-management/llm-wiki-demo-roadmap.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/personal/personal-knowledge-operating-loop.md
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/agent-workflow-architecture.md
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/agent-workflow-architecture.md
+
+## [2026-05-17] ingest | UI Design Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/ui-design/llm-wiki-demo-interface-patterns.md
+
+## [2026-05-17] ingest | Project Manager Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/project-management/llm-wiki-demo-roadmap.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/personal/personal-knowledge-operating-loop.md
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] query | Archived: What should be the next step for this LLM App demo
+- Created: wiki/syntheses/what-should-be-the-next-step-for-this-llm-app-demo.md
+
+## [2026-05-17] lint | 1 issue(s) found
+- Issue: Orphan: wiki/syntheses/what-should-be-the-next-step-for-this-llm-app-demo.md (no inbound links — re-ingest with another agent or compile a concept page that references it)
+
+## [2026-05-17] ingest | Programming Agent processed Karpathy LLM Wiki Summary
+- Updated: wiki/programming/karpathy-llm-wiki-summary.md
+
+## [2026-05-17] lint | 2 issue(s) found
+- Issue: Orphan: wiki/programming/karpathy-llm-wiki-summary.md (no inbound links — re-ingest with another agent or compile a concept page that references it)
+- Issue: Orphan: wiki/syntheses/what-should-be-the-next-step-for-this-llm-app-demo.md (no inbound links — re-ingest with another agent or compile a concept page that references it)
+
+## [2026-05-17] ingest | Programming Agent processed AI Agent Workflow Demo Notes
+- Updated: wiki/programming/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] source | Added raw source: https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Created: raw/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] ingest | Programming Agent processed https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Updated: wiki/programming/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] ingest | Programming Agent processed https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Updated: wiki/programming/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] ingest | UI Design Agent processed https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Updated: wiki/ui-design/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] ingest | Project Manager Agent processed https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Updated: wiki/project-management/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed https://gist.githubusercontent.com/karpathy/442a6bf555914893e9891c11519de94f/raw
+- Updated: wiki/personal/https-gist-githubusercontent-com-karpathy-442a6bf555914893e9891c11519de94f-raw.md
+
+## [2026-05-17] rebuild | Rebuilt wiki/index.md from current pages
+
+## [2026-05-17] lint | 0 issues found, 0 auto-fixed
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent processed LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] rebuild | Rebuilt wiki/index.md from current pages
+
+## [2026-05-17] lint | 1 issue(s) found
+- Issue: Orphan: wiki/programming/llm-wiki.md (no inbound links — re-ingest with another agent or compile a concept page that references it)
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent processed LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] ingest | UI Design Agent processed LLM Wiki
+- Updated: wiki/ui-design/llm-wiki.md
+
+## [2026-05-17] ingest | Project Manager Agent processed LLM Wiki
+- Updated: wiki/project-management/llm-wiki.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed LLM Wiki
+- Updated: wiki/personal/llm-wiki.md
+
+## [2026-05-17] concept | Compiled concept: workflow
+- Updated: wiki/concepts/workflow.md
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/programming/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | UI Design Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/ui-design/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Project Manager Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/project-management/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/personal/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Programming Agent used Gemini to process LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] ingest | UI Design Agent used Gemini to process LLM Wiki
+- Updated: wiki/ui-design/llm-wiki.md
+
+## [2026-05-17] ingest | Project Manager Agent used Gemini to process LLM Wiki
+- Updated: wiki/project-management/llm-wiki.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent used Gemini to process LLM Wiki
+- Updated: wiki/personal/llm-wiki.md
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent processed LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] ingest | UI Design Agent processed LLM Wiki
+- Updated: wiki/ui-design/llm-wiki.md
+
+## [2026-05-17] ingest | Project Manager Agent processed LLM Wiki
+- Updated: wiki/project-management/llm-wiki.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed LLM Wiki
+- Updated: wiki/personal/llm-wiki.md
+
+## [2026-08-13] concept | Compiled concept: knowledge-compounding
+- Updated: wiki/concepts/knowledge-compounding.md
+- Note: compiled by Claude (Cowork session), outside the Streamlit app
+
+## [2026-08-13] concept | Compiled concept: schema-as-contract
+- Updated: wiki/concepts/schema-as-contract.md
+- Note: compiled by Claude (Cowork session), outside the Streamlit app
+
+## [2026-08-13] rebuild | Rebuilt wiki/index.md concepts section
+
+## [2026-08-13] lint | 0 issues found, 0 auto-fixed`},
 "AGENTS.md": {group:"schema", fm:null, md:`# LLM Wiki Agent Rules
 
 This project is a demo of an LLM-maintained knowledge base.
@@ -848,7 +1285,7 @@ const io = new IntersectionObserver(es=>{
 document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
 
 /* nav active link */
-const secIds = ["concept","architecture","ingest","perspectives","map","wiki","ask","deploy"];
+const secIds = ["concept","architecture","ingest","perspectives","map","wiki","ask","maintain","starter","deploy"];
 const navLinks = [...document.querySelectorAll("nav .links a")];
 const secIo = new IntersectionObserver(es=>{
   es.forEach(e=>{ if(e.isIntersecting){
@@ -993,8 +1430,9 @@ function renderPerspectives(){
     {id:"w3",label:"project-mgmt/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/project-management/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
     {id:"w4",label:"personal/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/personal/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
     {id:"idx",label:"index.md",type:"sys",r:10,c:C.sys,file:"wiki/index.md",d_zh:"導航目錄,每次 ingest 更新",d_en:"Navigation catalog, updated on every ingest"},
-    {id:"log",label:"log.md",type:"sys",r:9,c:C.sys,d_zh:"append-only 操作時間軸",d_en:"Append-only operation timeline"},
-    {id:"cpt",label:"concepts/…",type:"concept",r:9,c:C.concept,d_zh:"跨來源主題合成頁(成長中)",d_en:"Cross-source concept pages (growing)"},
+    {id:"log",label:"log.md",type:"sys",r:9,c:C.sys,file:"wiki/log.md",d_zh:"append-only 操作時間軸,點擊看 timeline",d_en:"Append-only timeline — click to view"},
+    {id:"c1",label:"knowledge-compounding",type:"concept",r:9,c:C.concept,file:"wiki/concepts/knowledge-compounding.md",d_zh:"概念頁:知識為何會複利",d_en:"Concept: why knowledge compounds"},
+    {id:"c2",label:"schema-as-contract",type:"concept",r:9,c:C.concept,file:"wiki/concepts/schema-as-contract.md",d_zh:"概念頁:schema 即行為契約",d_en:"Concept: the schema as a behavioral contract"},
     {id:"syn",label:"syntheses/…",type:"concept",r:9,c:C.concept,d_zh:"由 Ask 回寫的答案頁(成長中)",d_en:"Answers filed back from Ask (growing)"}
   ];
   const eid=id=>nodes.findIndex(n=>n.id===id);
@@ -1003,7 +1441,7 @@ function renderPerspectives(){
     ["a1","w1"],["a2","w2"],["a3","w3"],["a4","w4"],
     ["w1","w2"],["w1","w3"],["w1","w4"],["w2","w3"],["w2","w4"],["w3","w4"],
     ["idx","w1"],["idx","w2"],["idx","w3"],["idx","w4"],["idx","log"],
-    ["cpt","w1"],["cpt","w4"],["syn","idx"]].map(([a,b])=>[eid(a),eid(b)]);
+    ["c1","w4"],["c1","w1"],["c1","w3"],["c1","r1"],["c1","r3"],["c1","r5"],["c2","w1"],["c2","w2"],["c2","r1"],["c2","r4"],["c1","c2"],["idx","c1"],["idx","c2"],["syn","idx"]].map(([a,b])=>[eid(a),eid(b)]);
 
   /* --- edge typing (for colored links + legend counts) --- */
   const ETYPE={tree:{c:"rgba(137,135,129,.9)",zh:"資料夾",en:"folder"},
@@ -1224,14 +1662,14 @@ function openFile(path){
   const chips=document.getElementById("fmChips"); chips.innerHTML="";
   if(f.fm){ Object.entries(f.fm).forEach(([k,v])=>{ const c=document.createElement("span"); c.className="chip"; c.textContent=k+": "+v; chips.appendChild(c); }); }
   const view=document.getElementById("mdView");
-  view.innerHTML=renderMd(f.md);
+  view.innerHTML = path==="wiki/log.md" ? renderLog(f.md) : renderMd(f.md);
   view.querySelectorAll("[data-open]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); openFile(a.dataset.open); }));
   const main=view.closest(".b-main"); if(main) main.scrollTop=0;
 }
 
 /* ========================================================= ask / search */
-const SUGG={zh:["cross-reference 怎麼維護?","ingest 的流程是什麼?","schema 是做什麼的?","為什麼不是 RAG?"],
-            en:["How are cross-references maintained?","What happens during ingest?","What does the schema do?","Why not RAG?"]};
+const SUGG={zh:["cross-reference 怎麼維護?","什麼是刻意練習?","schema 是做什麼的?","為什麼不是 RAG?","知識怎麼複利?"],
+            en:["How are cross-references maintained?","What is deliberate practice?","What does the schema do?","Why not RAG?","How does knowledge compound?"]};
 function renderSuggestions(){
   const box=document.getElementById("askSugg"); box.innerHTML="";
   SUGG[LANG].forEach(q=>{ const b=document.createElement("button"); b.textContent=q;
@@ -1286,6 +1724,102 @@ function runAsk(){
 }
 document.getElementById("askBtn").onclick=runAsk;
 document.getElementById("askInput").addEventListener("keydown",e=>{ if(e.key==="Enter") runAsk(); });
+
+
+/* ========================================================= log timeline */
+function renderLog(md){
+  const entries=[]; let cur=null;
+  md.split("\n").forEach(l=>{
+    const m=l.match(/^## \[([^\]]+)\] (\w+) \| (.*)$/);
+    if(m){ cur={date:m[1],kind:m[2],msg:m[3],items:[]}; entries.push(cur); }
+    else if(/^- /.test(l)&&cur) cur.items.push(l.slice(2));
+  });
+  const groups=[];
+  entries.forEach(e=>{ const p=groups[groups.length-1];
+    if(p && p.kind===e.kind && p.msg===e.msg && !e.items.length && !p.items.length){ p.n++; }
+    else groups.push(Object.assign({n:1},e)); });
+  groups.reverse();
+  const KC={source:"var(--raw)",ingest:"var(--agent)",query:"var(--concept)",concept:"var(--concept)",
+            lint:"var(--wiki)",rebuild:"var(--log)",init:"var(--log)"};
+  let h=`<h1>Wiki Log</h1><p><span data-zh>append-only 的操作時間軸(新到舊)。連續相同的操作已折疊,×N 表示重複次數。</span><span data-en>The append-only operation timeline (newest first). Consecutive identical entries are collapsed; ×N marks repeats.</span></p><div class="tl">`;
+  groups.forEach(e=>{
+    const c=KC[e.kind]||"var(--muted)";
+    h+=`<div class="tl-e"><span class="tl-dot" style="background:${c}"></span>
+      <div class="tl-head"><span class="tl-kind" style="color:${c}">${e.kind}</span><span class="tl-date">${e.date}</span>${e.n>1?`<span class="tl-n">×${e.n}</span>`:""}</div>
+      <div class="tl-msg">${esc(e.msg)}</div>${e.items.map(i=>`<div class="tl-item">${esc(i)}</div>`).join("")}</div>`;
+  });
+  return h+`</div>`;
+}
+
+/* ========================================================= real lint */
+function wikiContentKeys(){
+  return Object.keys(FILES).filter(k=>k.startsWith("wiki/") && k!=="wiki/index.md" && k!=="wiki/log.md");
+}
+function mdLinks(md){
+  const out=[]; const re=/\[([^\]]+)\]\(([^)]+)\)/g; let m;
+  while((m=re.exec(md))) out.push(m[2]);
+  return out.filter(u=>!/^https?:/.test(u) && !u.startsWith("#"));
+}
+const lintBtn=document.getElementById("runLint");
+lintBtn.addEventListener("click", async ()=>{
+  lintBtn.disabled=true;
+  const box=document.getElementById("lintChecks"), lg=document.getElementById("lintLog");
+  box.innerHTML=""; lg.classList.remove("show");
+  const pages=wikiContentKeys();
+  let issues=0;
+  async function check(nameZh,nameEn,fn){
+    const row=document.createElement("div"); row.className="lint-row";
+    row.innerHTML=`<span class="lint-ico"><span class="lint-spin"></span></span>
+      <div><div class="lint-name"><span data-zh>${nameZh}</span><span data-en>${nameEn}</span></div>
+      <div class="lint-detail">…</div></div>`;
+    box.appendChild(row);
+    await sleep(650);
+    const [bad,detail]=fn();
+    issues+=bad;
+    row.classList.add(bad?"bad":"ok");
+    row.querySelector(".lint-ico").textContent=bad?"✗":"✓";
+    row.querySelector(".lint-detail").textContent=detail;
+    return bad;
+  }
+  await check("空頁面檢查","Empty pages",()=>{
+    const empty=pages.filter(p=>FILES[p].md.trim().length<40);
+    return [empty.length, (LANG==="zh"?`掃描 ${pages.length} 頁,`:`scanned ${pages.length} pages, `)+(empty.length? empty.join(", ") : (LANG==="zh"?"沒有空頁面":"no empty pages"))];
+  });
+  await check("index 覆蓋檢查","Index coverage",()=>{
+    const idx=FILES["wiki/index.md"].md;
+    const missing=pages.filter(p=>!idx.includes(p));
+    return [missing.length, missing.length? (LANG==="zh"?"缺漏:":"missing: ")+missing.join(", ") : (LANG==="zh"?`全部 ${pages.length} 頁都有 index 條目`:`all ${pages.length} pages are indexed`)];
+  });
+  await check("內部連結檢查","Broken internal links",()=>{
+    let total=0; const broken=[];
+    for(const k of Object.keys(FILES)){
+      for(const u of mdLinks(FILES[k].md)){ total++; if(!FILES[u]) broken.push(k+" → "+u); }
+    }
+    return [broken.length, broken.length? broken.slice(0,4).join(" · ") : (LANG==="zh"?`檢查了 ${total} 條內部連結,全部有效`:`checked ${total} internal links, all valid`)];
+  });
+  await check("孤兒頁檢查","Orphan pages",()=>{
+    const inbound={}; pages.forEach(p=>inbound[p]=0);
+    for(const k of Object.keys(FILES)){
+      for(const u of mdLinks(FILES[k].md)){ if(u!==k && u in inbound) inbound[u]++; }
+    }
+    const orphans=pages.filter(p=>!inbound[p]);
+    return [orphans.length, orphans.length? orphans.join(", ") : (LANG==="zh"?"每一頁都有入站連結——沒有孤兒頁":"every page has inbound links — no orphans")];
+  });
+  const now=new Date().toISOString().slice(0,10);
+  lg.textContent=`## [${now}] lint | ${issues} issue(s) found`+(issues===0?", 0 auto-fixed":"");
+  lg.classList.add("show");
+  lintBtn.disabled=false;
+});
+
+/* ========================================================= starter copy */
+document.getElementById("copyTpl").addEventListener("click", async e=>{
+  const btn=e.currentTarget, txt=document.getElementById("starterTpl").textContent;
+  try{ await navigator.clipboard.writeText(txt); }
+  catch(_){ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  const old=btn.innerHTML;
+  btn.innerHTML=LANG==="zh"?"✓ 已複製!":"✓ Copied!";
+  setTimeout(()=>btn.innerHTML=old,1600);
+});
 
 /* ========================================================= init */
 renderTree(); renderPerspectives(); renderSuggestions(); openFile("wiki/index.md");

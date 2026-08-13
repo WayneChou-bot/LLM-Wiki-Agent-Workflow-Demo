@@ -20,7 +20,8 @@ This index is maintained by the demo app. It lists compiled wiki pages by agent 
 
 ## Concepts
 
-No pages yet.
+- [Knowledge Compounding](concepts/knowledge-compounding.md) - Why a maintained wiki beats query-time retrieval: knowledge is compiled once and every later operation builds on it.
+- [Schema as Contract](concepts/schema-as-contract.md) - AGENTS.md / CLAUDE.md as the behavioral contract that turns a chatbot into a disciplined wiki maintainer.
 
 ## Syntheses
 

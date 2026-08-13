@@ -1,6 +1,6 @@
 # LLM Wiki Agent Workflow Demo
 
-A local Streamlit demo for a **Karpathy-inspired LLM Wiki workflow**, with a multi-agent twist.
+A **Karpathy-inspired LLM Wiki workflow**, with a multi-agent twist — available as a local Streamlit app and an interactive static showcase site.
 
 > **Honesty note.** This is **not a 1:1 implementation** of Karpathy's original
 > [LLM Wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
@@ -20,7 +20,20 @@ The demo shows how several agent perspectives can compile the same raw sources i
 
 It writes real markdown files under `wiki/`, so the folder can also be opened as an Obsidian vault.
 
-## Run
+## Two ways to experience it
+
+| | Where it runs | What it does |
+|---|---|---|
+| **`web/` showcase site** | Any browser / [Vercel](https://vercel.com) | Interactive, bilingual (中/EN) static walkthrough: animated architecture, an ingest-workflow simulator, a draggable knowledge graph, a browser for the actual generated wiki pages, and a client-side Ask demo. Zero backend, zero API key. |
+| **`app.py` Streamlit app** | Local machine | The full 8-tab workflow (Showcase → Inputs → Agents → Knowledge → Concepts → Map → Ask → Maintain), wired to the Gemini API and writing real markdown files. |
+
+### Showcase site
+
+Open `web/index.html` directly in a browser — no build step, no dependencies.
+To publish it on Vercel, see [DEPLOY.md](DEPLOY.md) (≈2 minutes: import the repo,
+set the project's Root Directory to `web`, deploy).
+
+### Streamlit app
 
 ```powershell
 conda env create -f environment.yml
@@ -76,7 +89,12 @@ wiki/        Compiled knowledge pages (LLM-maintained)
 templates/   Page templates (article.md, synthesis.md) - used by the app at ingest time
 AGENTS.md    Agent maintenance rules / schema
 app.py       Streamlit interface
+web/         Static interactive showcase site (deployable to Vercel)
+DEPLOY.md    Step-by-step Vercel deployment guide
 ```
+
+Local media folders (screenshots, recordings, reference images) and personal
+notes are intentionally git-ignored — the repo only carries the work itself.
 
 ## Differences from the original gist
 

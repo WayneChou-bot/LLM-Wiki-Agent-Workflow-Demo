@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Wiki — Agent Workflow Demo</title>
+<meta name="description" content="A Karpathy-inspired LLM Wiki: AI agents compile raw sources into a persistent, compounding Markdown knowledge system. The Agent writes. The Wiki remembers.">
+<meta property="og:title" content="LLM Wiki — The Agent writes. The Wiki remembers.">
+<meta property="og:description" content="Interactive showcase of a Karpathy-inspired LLM Wiki workflow: raw/ + wiki/ + AGENTS.md, multi-perspective agents, and a self-growing knowledge graph.">
+<meta property="og:type" content="website">
+<style>
+:root{
+  --page:#0d0d0d;
+  --surface:#1a1a19;
+  --surface-2:#222221;
+  --ink:#ffffff;
+  --ink-2:#c3c2b7;
+  --muted:#898781;
+  --grid:#2c2c2a;
+  --border:rgba(255,255,255,0.10);
+  --raw:#3987e5;      /* blue  — raw sources */
+  --agent:#d95926;    /* orange — agents */
+  --wiki:#199e70;     /* aqua  — wiki pages */
+  --concept:#9085e9;  /* violet — concepts/syntheses */
+  --log:#c98500;      /* yellow — index/log */
+  --accent:#3987e5;
+  --radius:14px;
+  --sans:system-ui,-apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-family:var(--sans);line-height:1.65;overflow-x:hidden}
+::selection{background:rgba(57,135,229,.35)}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,.mono{font-family:var(--mono)}
+.lang-en [data-zh]{display:none!important}
+.lang-zh [data-en]{display:none!important}
+
+/* ---------- nav ---------- */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;gap:1.2rem;
+  padding:.7rem 1.4rem;background:rgba(13,13,13,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav .logo{font-weight:700;font-size:1.02rem;letter-spacing:.02em;color:var(--ink);display:flex;align-items:center;gap:.5rem}
+nav .logo .dot{width:10px;height:10px;border-radius:50%;background:var(--wiki);box-shadow:0 0 10px var(--wiki)}
+nav .links{display:flex;gap:1rem;margin-left:auto;flex-wrap:wrap}
+nav .links a{color:var(--ink-2);font-size:.86rem;padding:.25rem .4rem;border-radius:6px}
+nav .links a:hover{color:var(--ink);text-decoration:none;background:var(--surface-2)}
+nav .links a.active{color:var(--ink)}
+#langBtn{margin-left:.4rem;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);
+  border-radius:999px;padding:.32rem .85rem;font-size:.82rem;cursor:pointer;font-family:var(--sans);transition:.2s}
+#langBtn:hover{border-color:var(--accent)}
+@media(max-width:820px){nav .links{display:none}}
+
+/* ---------- hero ---------- */
+header{position:relative;min-height:92vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%}
+.hero-inner{position:relative;z-index:2;max-width:880px;padding:6rem 1.4rem 3rem}
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-2);border:1px solid var(--border);border-radius:999px;padding:.35rem 1rem;background:rgba(26,26,25,.6);margin-bottom:1.6rem}
+.eyebrow .pulse{width:8px;height:8px;border-radius:50%;background:var(--agent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(217,89,38,.5)}50%{box-shadow:0 0 0 7px rgba(217,89,38,0)}}
+h1{font-size:clamp(2rem,5.6vw,3.6rem);line-height:1.22;font-weight:800;letter-spacing:.01em}
+h1 .l1,h1 .l2{display:block;opacity:0;transform:translateY(24px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+h1 .l2{animation-delay:.35s}
+h1 .hl-a{color:var(--agent)}
+h1 .hl-w{color:var(--wiki)}
+@keyframes rise{to{opacity:1;transform:none}}
+.hero-sub{margin:1.4rem auto 0;max-width:640px;color:var(--ink-2);font-size:1.06rem;opacity:0;animation:rise .9s .7s forwards}
+.hero-cta{margin-top:2.2rem;display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:rise .9s .95s forwards}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.5rem;border-radius:999px;font-size:.95rem;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);transition:.25s;text-decoration:none!important}
+.btn-primary{background:var(--accent);color:#fff;border-color:transparent}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(57,135,229,.35)}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-ghost:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hero-stats{margin-top:3.2rem;display:flex;gap:2.6rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:rise .9s 1.2s forwards}
+.stat .num{font-size:1.9rem;font-weight:800;color:var(--ink)}
+.stat .lab{font-size:.8rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.scroll-hint{position:absolute;bottom:1.4rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:1.4rem;animation:bob 2s infinite;z-index:2}
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,8px)}}
+
+/* ---------- sections ---------- */
+section{max-width:1080px;margin:0 auto;padding:5.5rem 1.4rem 1rem}
+.sec-head{margin-bottom:2.4rem}
+.sec-kicker{font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.sec-head h2{font-size:clamp(1.5rem,3.4vw,2.2rem);font-weight:800;margin:.4rem 0 .6rem}
+.sec-head p{color:var(--ink-2);max-width:720px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.on{opacity:1;transform:none}
+
+/* quote */
+.quote{border-left:3px solid var(--wiki);background:var(--surface);border-radius:0 var(--radius) var(--radius) 0;
+  padding:1.4rem 1.6rem;margin:1.8rem 0;color:var(--ink-2);font-size:1.02rem}
+.quote b{color:var(--ink)}
+.quote .who{display:block;margin-top:.7rem;font-size:.84rem;color:var(--muted)}
+
+/* RAG vs Wiki compare */
+.compare-toggle{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px;margin-bottom:1.4rem}
+.compare-toggle button{border:0;background:transparent;color:var(--ink-2);padding:.5rem 1.3rem;border-radius:999px;cursor:pointer;
+  font-size:.9rem;font-weight:600;font-family:var(--sans);transition:.25s}
+.compare-toggle button.on{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--border)}
+.compare-stage{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.6rem;min-height:300px;overflow:hidden}
+.compare-panel{display:none;animation:fadeIn .5s}
+.compare-panel.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.flow-row{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;margin:1rem 0}
+.flow-node{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:.55rem .95rem;font-size:.88rem;color:var(--ink)}
+.flow-node.raw-n{border-color:var(--raw)}
+.flow-node.wiki-n{border-color:var(--wiki)}
+.flow-node.fade-n{opacity:.45;text-decoration:line-through}
+.flow-arrow{color:var(--muted);font-size:1.1rem}
+.compare-note{color:var(--ink-2);font-size:.92rem;margin-top:1rem}
+.compare-note b{color:var(--ink)}
+.repeat-badge{display:inline-block;background:rgba(230,103,103,.14);color:#e66767;border:1px solid rgba(230,103,103,.4);
+  border-radius:999px;font-size:.76rem;padding:.15rem .7rem;margin-left:.5rem}
+.compound-badge{display:inline-block;background:rgba(25,158,112,.14);color:#2fbd8d;border:1px solid rgba(25,158,112,.45);
+  border-radius:999px;font-size:.76rem;padding:.15rem .7rem;margin-left:.5rem}
+
+/* architecture cards */
+.arch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+@media(max-width:820px){.arch-grid{grid-template-columns:1fr}}
+.arch-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;
+  position:relative;transition:transform .3s,border-color .3s,box-shadow .3s;cursor:default}
+.arch-card:hover{transform:translateY(-6px);box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.arch-card .tag{font-family:var(--mono);font-size:.86rem;font-weight:700;display:inline-block;border-radius:8px;padding:.2rem .7rem;margin-bottom:.9rem}
+.arch-card.c-raw:hover{border-color:var(--raw)} .arch-card.c-raw .tag{background:rgba(57,135,229,.15);color:var(--raw)}
+.arch-card.c-wiki:hover{border-color:var(--wiki)} .arch-card.c-wiki .tag{background:rgba(25,158,112,.15);color:#2fbd8d}
+.arch-card.c-schema:hover{border-color:var(--agent)} .arch-card.c-schema .tag{background:rgba(217,89,38,.15);color:#e8763f}
+.arch-card h3{font-size:1.05rem;margin-bottom:.5rem}
+.arch-card p{color:var(--ink-2);font-size:.9rem}
+.arch-card .files{margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{font-family:var(--mono);font-size:.74rem;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--border);
+  border-radius:6px;padding:.15rem .55rem}
+.arch-flow{display:flex;justify-content:center;align-items:center;gap:.4rem;margin:1.6rem 0 0;color:var(--muted);font-size:.85rem;flex-wrap:wrap}
+.arch-flow .fchip{border:1px dashed var(--grid);border-radius:8px;padding:.3rem .8rem}
+
+/* ingest simulator */
+.sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.6rem;margin-top:.6rem}
+.sim-controls{display:grid;grid-template-columns:1fr 1fr auto;gap:1rem;align-items:end}
+@media(max-width:820px){.sim-controls{grid-template-columns:1fr}}
+.sim label{display:block;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem}
+.sim select{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-radius:10px;
+  padding:.65rem .8rem;font-size:.92rem;font-family:var(--sans);cursor:pointer}
+.sim select:focus{outline:2px solid var(--accent)}
+#runIngest{white-space:nowrap}
+#runIngest[disabled]{opacity:.55;cursor:wait;transform:none!important}
+.sim-steps{display:flex;gap:.5rem;flex-wrap:wrap;margin:1.5rem 0 .4rem}
+.step{flex:1;min-width:150px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+  padding:.7rem .9rem;font-size:.82rem;color:var(--muted);position:relative;transition:.35s}
+.step .n{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--grid);color:var(--ink-2);
+  font-size:.72rem;align-items:center;justify-content:center;margin-right:.45rem;font-weight:700;transition:.35s}
+.step.active{border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 1px var(--accent),0 6px 18px rgba(57,135,229,.25)}
+.step.active .n{background:var(--accent);color:#fff}
+.step.done{color:var(--ink-2);border-color:rgba(25,158,112,.5)}
+.step.done .n{background:var(--wiki);color:#fff}
+.sim-output{margin-top:1.2rem;border:1px dashed var(--grid);border-radius:10px;min-height:120px;padding:1.1rem 1.2rem;
+  font-size:.9rem;color:var(--ink-2);background:rgba(13,13,13,.45)}
+.sim-output .fname{font-family:var(--mono);color:#2fbd8d;font-size:.82rem;margin-bottom:.5rem}
+.sim-output .typing::after{content:"▌";animation:blink 1s steps(1) infinite;color:var(--wiki)}
+@keyframes blink{50%{opacity:0}}
+.sim-log{margin-top:.9rem;font-family:var(--mono);font-size:.76rem;color:var(--log);opacity:0;transition:.5s}
+.sim-log.show{opacity:1}
+.sim-hint{font-size:.8rem;color:var(--muted);margin-top:.8rem}
+
+/* perspectives */
+.persp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+@media(max-width:960px){.persp-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.persp-grid{grid-template-columns:1fr}}
+.persp{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;cursor:pointer;
+  transition:transform .3s,border-color .3s;position:relative;overflow:hidden}
+.persp::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--pc,var(--accent));opacity:.85}
+.persp:hover{transform:translateY(-5px);border-color:var(--pc,var(--accent))}
+.persp .icon{font-size:1.5rem;margin-bottom:.6rem;display:block}
+.persp h3{font-size:.98rem;margin-bottom:.35rem}
+.persp p{font-size:.82rem;color:var(--ink-2)}
+.persp .open{margin-top:.8rem;font-size:.78rem;color:var(--pc,var(--accent));font-weight:600}
+
+/* knowledge map */
+.map-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;position:relative}
+#graphCanvas{width:100%;height:520px;display:block;border-radius:10px;cursor:grab}
+#graphCanvas:active{cursor:grabbing}
+.map-legend{display:flex;gap:1.2rem;flex-wrap:wrap;padding:.8rem .4rem 0;font-size:.8rem;color:var(--ink-2)}
+.map-legend .li{display:inline-flex;align-items:center;gap:.45rem}
+.map-legend .sw{width:11px;height:11px;border-radius:50%}
+#graphTip{position:absolute;pointer-events:none;background:#0d0d0dee;border:1px solid var(--border);border-radius:8px;
+  padding:.5rem .8rem;font-size:.8rem;color:var(--ink);opacity:0;transition:opacity .15s;max-width:260px;z-index:5}
+#graphTip .t{font-weight:700}
+#graphTip .d{color:var(--ink-2);font-size:.74rem}
+.map-note{font-size:.84rem;color:var(--muted);margin-top:.8rem}
+
+/* wiki browser */
+.browser{display:grid;grid-template-columns:280px 1fr;gap:0;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;min-height:480px}
+@media(max-width:820px){.browser{grid-template-columns:1fr}}
+.b-side{border-right:1px solid var(--border);padding:1rem .8rem;background:rgba(13,13,13,.35);max-height:620px;overflow-y:auto}
+@media(max-width:820px){.b-side{border-right:0;border-bottom:1px solid var(--border);max-height:220px}}
+.b-side .grp{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:.9rem .5rem .3rem}
+.b-side .item{display:block;width:100%;text-align:left;background:transparent;border:0;color:var(--ink-2);font-size:.85rem;
+  padding:.42rem .6rem;border-radius:8px;cursor:pointer;font-family:var(--mono);transition:.2s}
+.b-side .item:hover{background:var(--surface-2);color:var(--ink)}
+.b-side .item.on{background:var(--surface-2);color:var(--ink);box-shadow:inset 2px 0 0 var(--accent)}
+.b-main{padding:1.6rem 1.9rem;max-height:620px;overflow-y:auto}
+.fm{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.1rem}
+.md h1{font-size:1.5rem;margin:.2rem 0 .9rem}
+.md h2{font-size:1.08rem;margin:1.4rem 0 .6rem;color:var(--ink);border-bottom:1px solid var(--grid);padding-bottom:.35rem}
+.md p{color:var(--ink-2);font-size:.93rem;margin:.55rem 0}
+.md ul{margin:.55rem 0 .55rem 1.3rem;color:var(--ink-2);font-size:.93rem}
+.md li{margin:.3rem 0}
+.md a{color:var(--accent)}
+.md code{background:var(--surface-2);border-radius:5px;padding:.08rem .38rem;font-size:.84em;color:#2fbd8d}
+.md em{color:var(--muted)}
+
+/* ask */
+.ask{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.6rem}
+.ask-bar{display:flex;gap:.7rem}
+.ask-bar input{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--ink);
+  padding:.75rem 1rem;font-size:.95rem;font-family:var(--sans)}
+.ask-bar input:focus{outline:2px solid var(--accent)}
+.ask-sugg{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+.ask-sugg button{background:transparent;border:1px solid var(--border);color:var(--ink-2);border-radius:999px;
+  padding:.3rem .9rem;font-size:.8rem;cursor:pointer;font-family:var(--sans);transition:.2s}
+.ask-sugg button:hover{border-color:var(--accent);color:var(--ink)}
+#askResults{margin-top:1.3rem}
+.hit{border:1px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;margin-bottom:.7rem;background:rgba(13,13,13,.4);
+  animation:fadeIn .45s}
+.hit .src{font-family:var(--mono);font-size:.76rem;color:#2fbd8d;margin-bottom:.3rem}
+.hit .ex{font-size:.88rem;color:var(--ink-2)}
+.hit .ex mark{background:rgba(201,133,0,.3);color:#ffd98a;border-radius:3px;padding:0 .15rem}
+.ask-actions{margin-top:.6rem}
+.ask-note{font-size:.8rem;color:var(--muted);margin-top:1rem}
+#synShelf{margin-top:1rem;display:flex;flex-direction:column;gap:.5rem}
+.syn-card{border:1px solid rgba(144,133,233,.45);border-radius:10px;padding:.7rem 1rem;font-size:.84rem;color:var(--ink-2);
+  background:rgba(144,133,233,.08);animation:fadeIn .5s}
+.syn-card .fn{font-family:var(--mono);color:var(--concept);font-size:.76rem}
+
+/* deploy / about */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+@media(max-width:820px){.two-col{grid-template-columns:1fr}}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem}
+.info-card h3{font-size:1rem;margin-bottom:.6rem}
+.info-card p,.info-card li{color:var(--ink-2);font-size:.9rem}
+.info-card ol{margin:.5rem 0 .5rem 1.2rem}
+.codeblock{background:#111110;border:1px solid var(--grid);border-radius:10px;padding:.9rem 1.1rem;font-family:var(--mono);
+  font-size:.8rem;color:var(--ink-2);overflow-x:auto;margin:.7rem 0;line-height:1.8}
+.codeblock .c{color:var(--muted)}
+.codeblock .g{color:#2fbd8d}
+
+footer{margin-top:5rem;border-top:1px solid var(--border);padding:2.4rem 1.4rem 3rem;text-align:center;color:var(--muted);font-size:.85rem}
+footer .flinks{display:flex;gap:1.4rem;justify-content:center;margin-bottom:1rem;flex-wrap:wrap}
+footer a{color:var(--ink-2)}
+</style>
+</head>
+<body class="lang-zh">
+
+<nav>
+  <span class="logo"><span class="dot"></span>LLM&nbsp;Wiki</span>
+  <div class="links">
+    <a href="#concept"><span data-zh>概念</span><span data-en>Concept</span></a>
+    <a href="#architecture"><span data-zh>三層架構</span><span data-en>Architecture</span></a>
+    <a href="#ingest"><span data-zh>Ingest 模擬</span><span data-en>Ingest Demo</span></a>
+    <a href="#perspectives"><span data-zh>多視角</span><span data-en>Perspectives</span></a>
+    <a href="#map"><span data-zh>知識圖譜</span><span data-en>Knowledge Map</span></a>
+    <a href="#wiki"><span data-zh>Wiki 瀏覽</span><span data-en>Browse Wiki</span></a>
+    <a href="#ask">Ask</a>
+    <a href="#deploy"><span data-zh>本機版</span><span data-en>Full App</span></a>
+  </div>
+  <button id="langBtn">EN</button>
+</nav>
+
+<header id="top">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <span class="eyebrow"><span class="pulse"></span>Karpathy-inspired · LLM Wiki Agent Workflow</span>
+    <h1>
+      <span class="l1"><span data-zh><span class="hl-a">Agent</span> 負責寫。</span><span data-en>The <span class="hl-a">Agent</span> writes.</span></span>
+      <span class="l2"><span data-zh><span class="hl-w">Wiki</span> 負責記住。</span><span data-en>The <span class="hl-w">Wiki</span> remembers.</span></span>
+    </h1>
+    <p class="hero-sub">
+      <span data-zh>這不是聊天機器人,也不只是 RAG。AI Agent 持續把原始資料編譯成一個可維護、可累積、會自己編織關聯的 Markdown 知識系統。</span>
+      <span data-en>Not another chatbot, and not just RAG. AI agents continuously compile raw material into a persistent, maintainable, self-linking Markdown knowledge system.</span>
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#ingest"><span data-zh>▶ 試玩 Ingest 模擬</span><span data-en>▶ Try the Ingest Demo</span></a>
+      <a class="btn btn-ghost" href="https://github.com/WayneChou-bot/LLM-Wiki-Agent-Workflow-Demo" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num" data-count="3">0</div><div class="lab"><span data-zh>層架構</span><span data-en>Layers</span></div></div>
+      <div class="stat"><div class="num" data-count="4">0</div><div class="lab"><span data-zh>Agent 視角</span><span data-en>Agent Lenses</span></div></div>
+      <div class="stat"><div class="num" data-count="3">0</div><div class="lab"><span data-zh>核心操作</span><span data-en>Operations</span></div></div>
+      <div class="stat"><div class="num">∞</div><div class="lab"><span data-zh>複利累積</span><span data-en>Compounding</span></div></div>
+    </div>
+  </div>
+  <div class="scroll-hint">↓</div>
+</header>
+
+<!-- ================= concept ================= -->
+<section id="concept">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>核心概念</span><span data-en>The Core Idea</span></div>
+    <h2><span data-zh>為什麼不是 RAG?</span><span data-en>Why not just RAG?</span></h2>
+    <p><span data-zh>Andrej Karpathy 在他的 LLM Wiki gist 中指出:一般 RAG 每次提問都要「從零重新發現知識」,什麼都沒有累積。LLM Wiki 則讓知識被編譯一次、持續維護,愈用愈厚。</span>
+       <span data-en>In his LLM Wiki gist, Andrej Karpathy points out that with plain RAG the LLM rediscovers knowledge from scratch on every question — nothing accumulates. An LLM Wiki compiles knowledge once and keeps it current, growing richer with use.</span></p>
+  </div>
+
+  <div class="reveal">
+    <div class="compare-toggle" role="tablist">
+      <button id="cmpRag" class="on" data-zh-html="RAG 模式" ><span data-zh>RAG 模式</span><span data-en>RAG mode</span></button>
+      <button id="cmpWiki"><span data-zh>LLM Wiki 模式</span><span data-en>LLM Wiki mode</span></button>
+    </div>
+    <div class="compare-stage">
+      <div class="compare-panel on" id="panelRag">
+        <div class="flow-row">
+          <span class="flow-node raw-n">📄 raw docs</span><span class="flow-arrow">→</span>
+          <span class="flow-node">🔍 retrieve chunks</span><span class="flow-arrow">→</span>
+          <span class="flow-node">🤖 LLM</span><span class="flow-arrow">→</span>
+          <span class="flow-node">💬 answer</span><span class="flow-arrow">→</span>
+          <span class="flow-node fade-n">🗑 <span data-zh>丟棄</span><span data-en>discarded</span></span>
+          <span class="repeat-badge"><span data-zh>每次提問重來一遍</span><span data-en>repeats on every question</span></span>
+        </div>
+        <p class="compare-note"><span data-zh><b>沒有累積。</b>跨五份文件的綜合問題,每次都要重新拼湊;好答案消失在聊天紀錄裡。NotebookLM、檔案上傳、多數 RAG 系統都是這種模式。</span>
+        <span data-en><b>No accumulation.</b> A question spanning five documents gets re-assembled from fragments every single time; good answers vanish into chat history. NotebookLM, file uploads, and most RAG systems work this way.</span></p>
+      </div>
+      <div class="compare-panel" id="panelWiki">
+        <div class="flow-row">
+          <span class="flow-node raw-n">📄 raw/</span><span class="flow-arrow">→</span>
+          <span class="flow-node">🤖 Agent ingest</span><span class="flow-arrow">→</span>
+          <span class="flow-node wiki-n">📚 wiki/ <span data-zh>知識頁</span><span data-en>pages</span></span><span class="flow-arrow">⇄</span>
+          <span class="flow-node wiki-n">🔗 cross-links</span>
+          <span class="compound-badge"><span data-zh>持續複利累積</span><span data-en>compounds over time</span></span>
+        </div>
+        <p class="compare-note"><span data-zh><b>知識編譯一次,持續保鮮。</b>新資料進來時,Agent 讀取、萃取、整合進既有頁面——更新摘要、標記矛盾、補上交叉連結。好答案還能回寫成 synthesis 頁,探索成果也會複利。</span>
+        <span data-en><b>Compiled once, kept current.</b> When a new source arrives, the agent reads it, extracts key information, and integrates it — updating summaries, flagging contradictions, maintaining cross-references. Good answers get filed back as synthesis pages, so exploration compounds too.</span></p>
+      </div>
+    </div>
+    <blockquote class="quote">
+      <b>"The wiki is a persistent, compounding artifact."</b>
+      <span data-zh> 交叉連結已經在那裡,矛盾已經被標記,綜合已經反映你讀過的一切。</span>
+      <span data-en> The cross-references are already there. The contradictions have already been flagged. The synthesis already reflects everything you've read.</span>
+      <span class="who">— Andrej Karpathy, <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" target="_blank" rel="noopener">LLM Wiki gist</a></span>
+    </blockquote>
+  </div>
+</section>
+
+<!-- ================= architecture ================= -->
+<section id="architecture">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>系統設計</span><span data-en>System Design</span></div>
+    <h2><span data-zh>三層架構</span><span data-en>The Three-Layer Architecture</span></h2>
+    <p><span data-zh>依循 Karpathy 的原始設計:不可變的原始資料、LLM 全權維護的 wiki、以及定義 Agent 行為的 schema。</span>
+       <span data-en>Following Karpathy's original design: immutable sources, an LLM-owned wiki, and a schema that turns the LLM into a disciplined maintainer.</span></p>
+  </div>
+  <div class="arch-grid">
+    <div class="arch-card c-raw reveal">
+      <span class="tag">raw/</span>
+      <h3><span data-zh>原始資料層</span><span data-en>Raw Sources</span></h3>
+      <p><span data-zh>你策展的來源文件——文章、論文、筆記。不可變的 source of truth,Agent 只讀不改。</span>
+         <span data-en>Your curated source documents — articles, papers, notes. The immutable source of truth: the agent reads, never modifies.</span></p>
+      <div class="files"><span class="chip">llm-wiki.md</span><span class="chip">ai-agent-workflow.md</span><span class="chip">deliberate-practice-notes.md</span><span class="chip">+3</span></div>
+    </div>
+    <div class="arch-card c-wiki reveal" style="transition-delay:.1s">
+      <span class="tag">wiki/</span>
+      <h3><span data-zh>知識頁層</span><span data-en>The Wiki</span></h3>
+      <p><span data-zh>LLM 生成與維護的 Markdown 知識頁:摘要、概念頁、synthesis,加上自動維護的交叉連結。你讀,LLM 寫。整個資料夾可直接用 Obsidian 開啟。</span>
+         <span data-en>LLM-generated and maintained Markdown pages: summaries, concept pages, syntheses, with auto-maintained cross-links. You read; the LLM writes. The folder opens directly as an Obsidian vault.</span></p>
+      <div class="files"><span class="chip">index.md</span><span class="chip">log.md</span><span class="chip">programming/</span><span class="chip">concepts/</span><span class="chip">syntheses/</span></div>
+    </div>
+    <div class="arch-card c-schema reveal" style="transition-delay:.2s">
+      <span class="tag">AGENTS.md</span>
+      <h3><span data-zh>Schema 層</span><span data-en>The Schema</span></h3>
+      <p><span data-zh>行為契約:定義 wiki 結構、慣例、以及 ingest / query / lint 的工作流程。這份檔案讓 LLM 從聊天機器人變成有紀律的 wiki 維護者。</span>
+         <span data-en>The behavioral contract: wiki structure, conventions, and the ingest / query / lint workflows. This file is what makes the LLM a disciplined wiki maintainer instead of a generic chatbot.</span></p>
+      <div class="files"><span class="chip">4 agent roles</span><span class="chip">3 operations</span><span class="chip">templates/</span></div>
+    </div>
+  </div>
+  <div class="arch-flow reveal">
+    <span class="fchip">index.md · <span data-zh>內容導向目錄</span><span data-en>content catalog</span></span>
+    <span>+</span>
+    <span class="fchip">log.md · <span data-zh>時間軸操作紀錄</span><span data-en>append-only timeline</span></span>
+    <span>=</span>
+    <span><span data-zh>不需向量資料庫也能導航整個知識庫</span><span data-en>navigation without any vector DB</span></span>
+  </div>
+</section>
+
+<!-- ================= ingest simulator ================= -->
+<section id="ingest">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>互動示範</span><span data-en>Interactive Demo</span></div>
+    <h2><span data-zh>Ingest 工作流模擬器</span><span data-en>Ingest Workflow Simulator</span></h2>
+    <p><span data-zh>挑一份原始資料、選一個 Agent 視角,看知識如何被編譯進 wiki——五個步驟正是本機 Streamlit 版每次 ingest 真實執行的流程。</span>
+       <span data-en>Pick a raw source and an agent lens, then watch knowledge get compiled into the wiki — the same five steps the local Streamlit app runs on every real ingest.</span></p>
+  </div>
+  <div class="sim reveal">
+    <div class="sim-controls">
+      <div>
+        <label><span data-zh>原始資料 (raw/)</span><span data-en>Raw source (raw/)</span></label>
+        <select id="simSource"></select>
+      </div>
+      <div>
+        <label><span data-zh>Agent 視角</span><span data-en>Agent lens</span></label>
+        <select id="simAgent"></select>
+      </div>
+      <button class="btn btn-primary" id="runIngest"><span data-zh>▶ 執行 Ingest</span><span data-en>▶ Run Ingest</span></button>
+    </div>
+    <div class="sim-steps">
+      <div class="step" id="st1"><span class="n">1</span><span data-zh>讀取原始資料</span><span data-en>Read source</span></div>
+      <div class="step" id="st2"><span class="n">2</span><span data-zh>以視角編譯</span><span data-en>Compile via lens</span></div>
+      <div class="step" id="st3"><span class="n">3</span><span data-zh>寫入 wiki 頁</span><span data-en>Write wiki page</span></div>
+      <div class="step" id="st4"><span class="n">4</span><span data-zh>更新交叉連結</span><span data-en>Update cross-links</span></div>
+      <div class="step" id="st5"><span class="n">5</span><span data-zh>更新 index + log</span><span data-en>Update index + log</span></div>
+    </div>
+    <div class="sim-output" id="simOut">
+      <span style="color:var(--muted)"><span data-zh>輸出會顯示在這裡……</span><span data-en>Output will appear here…</span></span>
+    </div>
+    <div class="sim-log" id="simLog"></div>
+    <p class="sim-hint"><span data-zh>* 此為前端模擬。本機 Streamlit 版會由 Gemini 實際編譯內容並寫入真實的 Markdown 檔案。</span>
+      <span data-en>* Front-end simulation. The local Streamlit app has Gemini actually compile the content and write real Markdown files.</span></p>
+  </div>
+</section>
+
+<!-- ================= perspectives ================= -->
+<section id="perspectives">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>多視角實驗</span><span data-en>The Multi-Perspective Twist</span></div>
+    <h2><span data-zh>同一份資料,四種知識產出</span><span data-en>One source, four knowledge artifacts</span></h2>
+    <p><span data-zh>在 Karpathy 原始概念之外,這個 demo 加上了「多視角 remix」:四個 Agent 角色把同一份來源編譯成各自用途的 wiki 頁,並互相交叉連結。點擊卡片可看實際生成的頁面。</span>
+       <span data-en>On top of Karpathy's original idea, this demo adds a multi-perspective remix: four agent roles compile the same source into their own wiki page, all cross-linked. Click a card to read the actual generated page.</span></p>
+  </div>
+  <div class="persp-grid" id="perspGrid"></div>
+</section>
+
+<!-- ================= knowledge map ================= -->
+<section id="map">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>知識網絡</span><span data-en>The Knowledge Network</span></div>
+    <h2><span data-zh>互動式知識圖譜</span><span data-en>Interactive Knowledge Map</span></h2>
+    <p><span data-zh>重點不是產生單篇摘要,而是讓知識逐步形成網路。拖曳節點、滑過看說明、點擊 wiki 節點可直接開啟該頁。圖愈密,知識庫愈好走。</span>
+       <span data-en>The point isn't producing one summary — it's letting knowledge grow into a network. Drag nodes, hover for details, click a wiki node to open the page. The denser the graph, the more navigable the wiki.</span></p>
+  </div>
+  <div class="map-wrap reveal">
+    <canvas id="graphCanvas"></canvas>
+    <div id="graphTip"></div>
+    <div class="map-legend">
+      <span class="li"><span class="sw" style="background:var(--raw)"></span><span data-zh>原始資料</span><span data-en>Raw source</span></span>
+      <span class="li"><span class="sw" style="background:var(--agent)"></span>Agent</span>
+      <span class="li"><span class="sw" style="background:var(--wiki)"></span><span data-zh>Wiki 頁</span><span data-en>Wiki page</span></span>
+      <span class="li"><span class="sw" style="background:var(--log)"></span>index / log</span>
+      <span class="li"><span class="sw" style="background:var(--concept)"></span><span data-zh>概念 / Synthesis</span><span data-en>Concept / Synthesis</span></span>
+    </div>
+  </div>
+  <p class="map-note"><span data-zh>每次 ingest 後,系統會自動更新同一來源所有兄弟頁面的 Related Pages 區塊,讓交叉連結保持對稱。</span>
+     <span data-en>After every ingest, the system refreshes the Related Pages block of every sibling page from the same source, keeping cross-references symmetric.</span></p>
+</section>
+
+<!-- ================= wiki browser ================= -->
+<section id="wiki">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>真實產出</span><span data-en>Real Output</span></div>
+    <h2><span data-zh>瀏覽 Wiki 頁面</span><span data-en>Browse the Wiki</span></h2>
+    <p><span data-zh>以下是 demo 實際生成的 Markdown 檔案——包含 YAML frontmatter、Related Pages 交叉連結,以及 index 與 log。這個資料夾同時也是一個 Obsidian vault。</span>
+       <span data-en>These are the actual Markdown files the demo generated — YAML frontmatter, Related Pages cross-links, plus the index and log. The same folder doubles as an Obsidian vault.</span></p>
+  </div>
+  <div class="browser reveal">
+    <div class="b-side" id="fileTree"></div>
+    <div class="b-main"><div id="fmChips" class="fm"></div><div class="md" id="mdView"></div></div>
+  </div>
+</section>
+
+<!-- ================= ask ================= -->
+<section id="ask">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">Query</div>
+    <h2><span data-zh>對整個 Wiki 提問</span><span data-en>Ask the Wiki</span></h2>
+    <p><span data-zh>Query 流程:先讀 index 找到相關頁面,再讀頁面內容作答並附上引用。有價值的回答可以「回寫」成 synthesis 頁——讓探索也複利。</span>
+       <span data-en>The query flow: read the index to find relevant pages, then answer from page content with citations. Valuable answers can be filed back as synthesis pages — so exploration compounds too.</span></p>
+  </div>
+  <div class="ask reveal">
+    <div class="ask-bar">
+      <input id="askInput" type="text" placeholder="e.g. cross-links? ingest? schema?">
+      <button class="btn btn-primary" id="askBtn"><span data-zh>搜尋</span><span data-en>Search</span></button>
+    </div>
+    <div class="ask-sugg" id="askSugg"></div>
+    <div id="askResults"></div>
+    <div id="synShelf"></div>
+    <p class="ask-note"><span data-zh>* 線上展示版使用客戶端關鍵字檢索;本機 Streamlit 版由 Gemini 讀取相關頁面並生成完整回答。</span>
+       <span data-en>* This online demo uses client-side keyword search; the local Streamlit app has Gemini read the relevant pages and synthesize a full answer.</span></p>
+  </div>
+</section>
+
+<!-- ================= deploy / full app ================= -->
+<section id="deploy">
+  <div class="sec-head reveal">
+    <div class="sec-kicker"><span data-zh>完整版本</span><span data-en>The Full App</span></div>
+    <h2><span data-zh>本機 Streamlit 完整版</span><span data-en>Run the full Streamlit app</span></h2>
+    <p><span data-zh>這個網站是靜態展示;完整的 8 分頁工作流(Showcase → Inputs → Agents → Knowledge → Concepts → Map → Ask → Maintain)在本機執行,串接 Gemini API 寫入真實檔案。</span>
+       <span data-en>This site is a static showcase; the full 8-tab workflow (Showcase → Inputs → Agents → Knowledge → Concepts → Map → Ask → Maintain) runs locally, wired to the Gemini API and writing real files.</span></p>
+  </div>
+  <div class="two-col">
+    <div class="info-card reveal">
+      <h3><span data-zh>三個指令啟動</span><span data-en>Three commands to launch</span></h3>
+      <div class="codeblock">
+<span class="c"># 1. create env</span>
+conda env create -f environment.yml
+conda activate llm-wiki-demo
+<span class="c"># 2. set your key</span>
+$env:GEMINI_API_KEY=<span class="g">"your-api-key"</span>
+<span class="c"># 3. run</span>
+streamlit run app.py</div>
+      <p><a href="https://github.com/WayneChou-bot/LLM-Wiki-Agent-Workflow-Demo" target="_blank" rel="noopener">github.com/WayneChou-bot/LLM-Wiki-Agent-Workflow-Demo ↗</a></p>
+    </div>
+    <div class="info-card reveal" style="transition-delay:.1s">
+      <h3><span data-zh>為什麼是 Markdown 而不是資料庫?</span><span data-en>Why Markdown instead of a database?</span></h3>
+      <p><span data-zh>因為知識應該保持 portable、inspectable、human-readable。整個 wiki/ 是純 Markdown + git repo:版本歷史免費、Obsidian 直接開、不被任何平台綁死。</span>
+         <span data-en>Because knowledge should stay portable, inspectable, and human-readable. The whole wiki/ is plain Markdown in a git repo: free version history, opens straight into Obsidian, zero vendor lock-in.</span></p>
+      <p style="margin-top:.8rem"><span data-zh>Lint 操作會定期健檢:空頁面、遺漏的 index 條目、失效連結、孤兒頁面。</span>
+         <span data-en>The lint operation runs periodic health checks: empty pages, missing index entries, broken links, orphan pages.</span></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="flinks">
+    <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f" target="_blank" rel="noopener">Karpathy's LLM Wiki gist</a>
+    <a href="https://github.com/WayneChou-bot/LLM-Wiki-Agent-Workflow-Demo" target="_blank" rel="noopener">GitHub</a>
+    <a href="#top"><span data-zh>回到頂部</span><span data-en>Back to top</span></a>
+  </div>
+  <div><span data-zh>由 Wayne Chou 打造 · 靈感來自 Andrej Karpathy 的 LLM Wiki 概念 · MIT License</span>
+       <span data-en>Built by Wayne Chou · Inspired by Andrej Karpathy's LLM Wiki idea · MIT License</span></div>
+</footer>
+
+<script>
+"use strict";
+/* ========================================================= i18n */
+let LANG = "zh";
+const langBtn = document.getElementById("langBtn");
+function setLang(l){
+  LANG = l;
+  document.body.classList.toggle("lang-zh", l==="zh");
+  document.body.classList.toggle("lang-en", l==="en");
+  document.documentElement.lang = l==="zh" ? "zh-Hant" : "en";
+  langBtn.textContent = l==="zh" ? "EN" : "中";
+  renderTree(); renderPerspectives(); renderSuggestions();
+  if(currentFile) openFile(currentFile);
+}
+langBtn.addEventListener("click", ()=> setLang(LANG==="zh" ? "en" : "zh"));
+
+/* ========================================================= data */
+const AGENTS = {
+  "programming": {label:"Programming Agent", icon:"⌨️", color:"var(--raw)", hex:"#3987e5",
+    zh:"整理技術架構、實作模式、API 整合與可維護性。", en:"Architecture, implementation patterns, API integration, maintainability.",
+    lens_zh:"實作模式、架構、整合限制與可維護性", lens_en:"implementation patterns, architecture, integration constraints, and maintainability",
+    file:"wiki/programming/llm-wiki.md"},
+  "ui-design": {label:"UI Design Agent", icon:"🎨", color:"var(--concept)", hex:"#9085e9",
+    zh:"整理畫面結構、互動控制、使用者旅程與可用性風險。", en:"Screen structure, interaction controls, user journeys, usability risks.",
+    lens_zh:"畫面結構、互動控制、使用者旅程與可用性風險", lens_en:"screen structure, interaction controls, user journeys, and usability risks",
+    file:"wiki/ui-design/llm-wiki.md"},
+  "project-management": {label:"Project Manager Agent", icon:"📋", color:"var(--log)", hex:"#c98500",
+    zh:"整理目標、範疇、roadmap、依賴、風險與決策。", en:"Goals, scope, roadmap, dependencies, risks, decisions.",
+    lens_zh:"目標、範疇、roadmap、依賴、風險與決策", lens_en:"goals, scope, roadmap, dependencies, risks, and decisions",
+    file:"wiki/project-management/llm-wiki.md"},
+  "personal": {label:"Personal Knowledge Agent", icon:"📚", color:"var(--wiki)", hex:"#199e70",
+    zh:"整理學習迴圈、反思、複習習慣與長期知識累積。", en:"Learning loops, reflection, review habits, long-term accumulation.",
+    lens_zh:"學習迴圈、反思、複習習慣與個人知識累積", lens_en:"learning loops, reflection, review habits, and personal knowledge accumulation",
+    file:"wiki/personal/llm-wiki.md"}
+};
+const RAW_SOURCES = [
+  {id:"llm-wiki", title:"LLM Wiki (Karpathy gist)", real:true},
+  {id:"ai-agent-workflow", title:"AI Agent Workflow"},
+  {id:"karpathy-llm-wiki-summary", title:"Karpathy LLM Wiki Summary"},
+  {id:"llm-app-development-patterns", title:"LLM App Development Patterns"},
+  {id:"deliberate-practice-notes", title:"Deliberate Practice Notes"},
+  {id:"personal-crm-product-brief", title:"Personal CRM Product Brief"}
+];
+
+/* Actual wiki content, baked in from the repo */
+const FILES = {
+"wiki/index.md": {group:"wiki/", fm:null, md:`# Knowledge Base Index
+
+This index is maintained by the demo app. It lists compiled wiki pages by agent domain.
+
+## Programming
+
+- [LLM Wiki](wiki/programming/llm-wiki.md) - From the Programming Agent lens, \`LLM Wiki\` is most useful for implementation patterns, architecture, integration constraints, and maintainability.
+
+## UI Design
+
+- [LLM Wiki](wiki/ui-design/llm-wiki.md) - From the UI Design Agent lens, \`LLM Wiki\` is most useful for screen structure, interaction controls, user journeys, and usability risks.
+
+## Project Management
+
+- [LLM Wiki](wiki/project-management/llm-wiki.md) - From the Project Manager Agent lens, \`LLM Wiki\` is most useful for goals, scope, roadmap, dependencies, risks, and decisions.
+
+## Personal Knowledge
+
+- [LLM Wiki](wiki/personal/llm-wiki.md) - From the Personal Knowledge Agent lens, \`LLM Wiki\` is most useful for learning loops, reflection, review habits, and personal knowledge accumulation.
+
+## Concepts
+
+No pages yet.
+
+## Syntheses
+
+No pages yet.`},
+"wiki/programming/llm-wiki.md": {group:"wiki/", fm:{title:"LLM Wiki", agent:"Programming Agent", updated:"2026-05-17", raw:"raw/llm-wiki.md"}, md:`# LLM Wiki
+
+## Summary
+
+From the Programming Agent lens, \`LLM Wiki\` is most useful for implementation patterns, architecture, integration constraints, and maintainability.
+
+## Key Points
+
+- CLAUDE.md for Claude Code or AGENTS.md for Codex) that tells the LLM how the wiki is structured, what the conventions are, and what workflows to follow when ingesting sources, answering questions, or maintaining the wiki.
+- It's up to you to develop the workflow that fits your style and document it in the schema for future sessions.
+- It describes the idea, not a specific implementation.
+
+## Implications
+
+- Keep the app file-based first so Obsidian remains a first-class viewer.
+- Defer model API integration until the ingest and query loop is easy to explain.
+- Treat \`AGENTS.md\` as the behavioral contract for future automation.
+
+## Related Pages
+
+- [LLM Wiki — Personal Knowledge](wiki/personal/llm-wiki.md)
+- [LLM Wiki — Project Management](wiki/project-management/llm-wiki.md)
+- [LLM Wiki — UI Design](wiki/ui-design/llm-wiki.md)
+
+## Source
+
+- [Source material](raw/llm-wiki.md) · [Knowledge Base Index](wiki/index.md)`},
+"wiki/ui-design/llm-wiki.md": {group:"wiki/", fm:{title:"LLM Wiki", agent:"UI Design Agent", updated:"2026-05-17", raw:"raw/llm-wiki.md"}, md:`# LLM Wiki
+
+## Summary
+
+From the UI Design Agent lens, \`LLM Wiki\` is most useful for screen structure, interaction controls, user journeys, and usability risks.
+
+## Key Points
+
+- CLAUDE.md for Claude Code or AGENTS.md for Codex) that tells the LLM how the wiki is structured, what the conventions are, and what workflows to follow when ingesting sources, answering questions, or maintaining the wiki.
+- It's up to you to develop the workflow that fits your style and document it in the schema for future sessions.
+
+## Implications
+
+- Expose the workflow as a small number of stable tabs.
+- Keep raw sources, compiled pages, and operations visually separate.
+- Show durable markdown output immediately after every operation.
+
+## Related Pages
+
+- [LLM Wiki — Personal Knowledge](wiki/personal/llm-wiki.md)
+- [LLM Wiki — Programming](wiki/programming/llm-wiki.md)
+- [LLM Wiki — Project Management](wiki/project-management/llm-wiki.md)
+
+## Source
+
+- [Source material](raw/llm-wiki.md) · [Knowledge Base Index](wiki/index.md)`},
+"wiki/project-management/llm-wiki.md": {group:"wiki/", fm:{title:"LLM Wiki", agent:"Project Manager Agent", updated:"2026-05-17", raw:"raw/llm-wiki.md"}, md:`# LLM Wiki
+
+## Summary
+
+From the Project Manager Agent lens, \`LLM Wiki\` is most useful for goals, scope, roadmap, dependencies, risks, and decisions.
+
+## Key Points
+
+- Its goal is to communicate the high level idea, but your agent will build out the specifics in collaboration with you.
+- **Personal**: tracking your own goals, health, psychology, self-improvement — filing journal entries, articles, podcast notes, and building up a structured picture of yourself over time.
+
+## Implications
+
+- Use the demo to prove the smallest useful loop before adding infrastructure.
+- Separate phase one workflow validation from phase two LLM API integration.
+- Track risks in the wiki so decisions survive beyond the live demo.
+
+## Related Pages
+
+- [LLM Wiki — Personal Knowledge](wiki/personal/llm-wiki.md)
+- [LLM Wiki — Programming](wiki/programming/llm-wiki.md)
+- [LLM Wiki — UI Design](wiki/ui-design/llm-wiki.md)
+
+## Source
+
+- [Source material](raw/llm-wiki.md) · [Knowledge Base Index](wiki/index.md)`},
+"wiki/personal/llm-wiki.md": {group:"wiki/", fm:{title:"LLM Wiki", agent:"Personal Knowledge Agent", updated:"2026-05-17", raw:"raw/llm-wiki.md"}, md:`# LLM Wiki
+
+## Summary
+
+From the Personal Knowledge Agent lens, \`LLM Wiki\` is most useful for learning loops, reflection, review habits, and personal knowledge accumulation.
+
+## Key Points
+
+- A pattern for building personal knowledge bases using LLMs.
+- This works, but the LLM is rediscovering knowledge from scratch on every question.
+- Instead of just retrieving from raw documents at query time, the LLM **incrementally builds and maintains a persistent wiki** — a structured, interlinked collection of markdown files that sits between you and the raw sources.
+- It reads it, extracts the key information, and integrates it into the existing wiki — updating entity pages, revising topic summaries, noting where new data contradicts old claims, strengthening or challenging the evolving synthesis.
+
+## Implications
+
+- Make each useful answer eligible for archival as a synthesis page.
+- Use the log as a lightweight reflection trail.
+- Prefer repeated small ingests over large, unreviewed knowledge dumps.
+
+## Related Pages
+
+- [LLM Wiki — Programming](wiki/programming/llm-wiki.md)
+- [LLM Wiki — Project Management](wiki/project-management/llm-wiki.md)
+- [LLM Wiki — UI Design](wiki/ui-design/llm-wiki.md)
+
+## Source
+
+- [Source material](raw/llm-wiki.md) · [Knowledge Base Index](wiki/index.md)`},
+"raw/llm-wiki.md": {group:"raw/", fm:{title:"LLM Wiki", source:"gist.github.com/karpathy", collected:"2026-05-17"}, md:`# LLM Wiki
+
+A pattern for building personal knowledge bases using LLMs.
+
+## The core idea
+
+Most people's experience with LLMs and documents looks like RAG: you upload a collection of files, the LLM retrieves relevant chunks at query time, and generates an answer. This works, but the LLM is rediscovering knowledge from scratch on every question. There's no accumulation.
+
+The idea here is different. Instead of just retrieving from raw documents at query time, the LLM **incrementally builds and maintains a persistent wiki** — a structured, interlinked collection of markdown files that sits between you and the raw sources. The knowledge is compiled once and then *kept current*, not re-derived on every query.
+
+This is the key difference: **the wiki is a persistent, compounding artifact.** The cross-references are already there. The contradictions have already been flagged. The synthesis already reflects everything you've read.
+
+## Architecture
+
+**Raw sources** — your curated collection of source documents. Immutable; the LLM reads but never modifies.
+
+**The wiki** — a directory of LLM-generated markdown files. The LLM owns this layer entirely. You read it; the LLM writes it.
+
+**The schema** — a document (e.g. CLAUDE.md or AGENTS.md) that tells the LLM how the wiki is structured and what workflows to follow. It's what makes the LLM a disciplined wiki maintainer rather than a generic chatbot.
+
+## Operations
+
+**Ingest.** Drop a new source into the raw collection; the LLM reads it, writes a summary page, updates the index, updates relevant pages across the wiki, and appends to the log. A single source might touch 10-15 wiki pages.
+
+**Query.** Ask questions against the wiki. The LLM reads the index first, drills into relevant pages, and synthesizes an answer with citations. Good answers can be filed back into the wiki as new pages.
+
+**Lint.** Periodically health-check the wiki: contradictions, stale claims, orphan pages, missing cross-references, data gaps.
+
+## Why this works
+
+The tedious part of maintaining a knowledge base is not the reading or the thinking — it's the bookkeeping. Humans abandon wikis because the maintenance burden grows faster than the value. LLMs don't get bored, don't forget to update a cross-reference, and can touch 15 files in one pass. The wiki stays maintained because the cost of maintenance is near zero.
+
+The idea is related in spirit to Vannevar Bush's Memex (1945) — a personal, curated knowledge store with associative trails between documents. The part he couldn't solve was who does the maintenance. The LLM handles that.`},
+"AGENTS.md": {group:"schema", fm:null, md:`# LLM Wiki Agent Rules
+
+This project is a demo of an LLM-maintained knowledge base.
+
+## Core Layers
+
+- \`raw/\` contains immutable source materials. Do not rewrite raw sources during ingest.
+- \`wiki/\` contains compiled knowledge pages maintained by agents.
+- \`wiki/index.md\` is the navigation layer. Keep it concise.
+- \`wiki/log.md\` is the chronological operation log. Append every ingest, query archive, and lint run.
+- \`templates/\` contains page patterns used by the demo.
+
+## Demo Agents
+
+### Programming Agent
+
+Focus on technical architecture, implementation patterns, API integration, debugging notes, and reusable engineering decisions. Write pages under \`wiki/programming/\`.
+
+### UI Design Agent
+
+Focus on product experience, screen structure, interaction patterns, layout constraints, affordances, and design tradeoffs. Write pages under \`wiki/ui-design/\`.
+
+### Project Manager Agent
+
+Focus on goals, scope, roadmap, risks, decisions, milestones, dependencies, and execution planning. Write pages under \`wiki/project-management/\`.
+
+### Personal Knowledge Agent
+
+Focus on learning loops, personal operating systems, notes, reflective practice, habits, and long-term knowledge accumulation. Write pages under \`wiki/personal/\`.
+
+## Operations
+
+### Ingest
+
+1. Read one source from \`raw/\`.
+2. Compile it into one or more topic pages under \`wiki/\`.
+3. Update \`wiki/index.md\`.
+4. Append to \`wiki/log.md\`.
+
+### Query
+
+1. Read \`wiki/index.md\`.
+2. Read relevant pages.
+3. Answer from wiki content first.
+4. Only write a new page when the user chooses to archive the answer.
+
+### Lint
+
+Check for missing index entries, empty pages, broken local links, and orphan topics. Report issues before making large structural changes.`}
+};
+
+/* ========================================================= scroll reveal */
+const io = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("on"); io.unobserve(e.target);} });
+},{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+
+/* nav active link */
+const secIds = ["concept","architecture","ingest","perspectives","map","wiki","ask","deploy"];
+const navLinks = [...document.querySelectorAll("nav .links a")];
+const secIo = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){
+    navLinks.forEach(a=>a.classList.toggle("active", a.getAttribute("href")==="#"+e.target.id));
+  }});
+},{rootMargin:"-40% 0px -55% 0px"});
+secIds.forEach(id=>{const el=document.getElementById(id); if(el) secIo.observe(el);});
+
+/* count-up stats */
+const statIo = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(!e.isIntersecting) return;
+    statIo.unobserve(e.target);
+    const t=+e.target.dataset.count, start=performance.now();
+    (function tick(now){ const p=Math.min(1,(now-start)/900);
+      e.target.textContent=Math.round(t*p);
+      if(p<1) requestAnimationFrame(tick); })(start);
+  });
+},{threshold:.5});
+document.querySelectorAll("[data-count]").forEach(el=>statIo.observe(el));
+
+/* ========================================================= hero particle network */
+(function(){
+  const cv=document.getElementById("heroCanvas"), ctx=cv.getContext("2d");
+  let W,H,pts=[],raf;
+  const COLORS=["#3987e5","#199e70","#d95926","#9085e9","#c98500"];
+  function resize(){ W=cv.width=cv.offsetWidth*devicePixelRatio; H=cv.height=cv.offsetHeight*devicePixelRatio;
+    const n=Math.min(70,Math.floor(cv.offsetWidth/16));
+    pts=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*.28*devicePixelRatio, vy:(Math.random()-.5)*.28*devicePixelRatio,
+      r:(Math.random()*2+1.4)*devicePixelRatio, c:COLORS[Math.floor(Math.random()*COLORS.length)]}));
+  }
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    const link=140*devicePixelRatio;
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i];
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+      for(let j=i+1;j<pts.length;j++){
+        const q=pts[j],dx=p.x-q.x,dy=p.y-q.y,d=Math.hypot(dx,dy);
+        if(d<link){ ctx.strokeStyle=`rgba(137,135,129,${(1-d/link)*.22})`;
+          ctx.lineWidth=devicePixelRatio*.7; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); }
+      }
+    }
+    for(const p of pts){ ctx.globalAlpha=.8; ctx.fillStyle=p.c;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
+    raf=requestAnimationFrame(frame);
+  }
+  const mq=matchMedia("(prefers-reduced-motion: reduce)");
+  resize(); addEventListener("resize",resize);
+  if(!mq.matches) frame(); else { // static frame
+    frame(); cancelAnimationFrame(raf);
+  }
+})();
+
+/* ========================================================= RAG vs Wiki toggle */
+const cmpRag=document.getElementById("cmpRag"), cmpWiki=document.getElementById("cmpWiki");
+function setCmp(mode){
+  cmpRag.classList.toggle("on",mode==="rag"); cmpWiki.classList.toggle("on",mode==="wiki");
+  document.getElementById("panelRag").classList.toggle("on",mode==="rag");
+  document.getElementById("panelWiki").classList.toggle("on",mode==="wiki");
+}
+cmpRag.onclick=()=>setCmp("rag"); cmpWiki.onclick=()=>setCmp("wiki");
+
+/* ========================================================= ingest simulator */
+const simSource=document.getElementById("simSource"), simAgent=document.getElementById("simAgent");
+RAW_SOURCES.forEach(s=>{ const o=document.createElement("option"); o.value=s.id; o.textContent="raw/"+s.id+".md"; simSource.appendChild(o); });
+Object.entries(AGENTS).forEach(([k,a])=>{ const o=document.createElement("option"); o.value=k; o.textContent=a.icon+" "+a.label; simAgent.appendChild(o); });
+
+const simOut=document.getElementById("simOut"), simLog=document.getElementById("simLog"), runBtn=document.getElementById("runIngest");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function typeText(el,text,speed=9){
+  el.classList.add("typing");
+  for(let i=0;i<=text.length;i+=2){ el.textContent=text.slice(0,i); await sleep(speed); }
+  el.textContent=text; el.classList.remove("typing");
+}
+runBtn.addEventListener("click", async ()=>{
+  const src=RAW_SOURCES.find(s=>s.id===simSource.value), agKey=simAgent.value, ag=AGENTS[agKey];
+  runBtn.disabled=true;
+  simLog.classList.remove("show");
+  const steps=[1,2,3,4,5].map(i=>document.getElementById("st"+i));
+  steps.forEach(s=>s.classList.remove("active","done"));
+  simOut.innerHTML="";
+  const stepDelays=[600,750,0,700,600];
+  for(let i=0;i<steps.length;i++){
+    steps[i].classList.add("active");
+    if(i===2){ // write wiki page with typing effect
+      const folder=agKey, fname=`wiki/${folder}/${src.id}.md`;
+      const fn=document.createElement("div"); fn.className="fname"; fn.textContent="✓ "+fname; simOut.appendChild(fn);
+      const body=document.createElement("div"); simOut.appendChild(body);
+      const summary = LANG==="zh"
+        ? `## Summary\n從 ${ag.label} 的視角來看,「${src.title}」最有價值的部分是:${ag.lens_zh}。`
+        : `## Summary\nFrom the ${ag.label} lens, "${src.title}" is most useful for ${ag.lens_en}.`;
+      await typeText(body, summary);
+    } else {
+      await sleep(stepDelays[i]);
+    }
+    steps[i].classList.remove("active"); steps[i].classList.add("done");
+  }
+  const now=new Date().toISOString().slice(0,10);
+  simLog.textContent=`## [${now}] ingest | ${src.title} → wiki/${agKey}/  (+ index.md, + Related Pages × ${Object.keys(AGENTS).length-1})`;
+  simLog.classList.add("show");
+  const tail=document.createElement("div");
+  tail.style.cssText="margin-top:.6rem;font-size:.8rem;color:var(--muted)";
+  tail.textContent = LANG==="zh"
+    ? (src.real ? "這份來源的四個視角頁面是真實生成的——到「Wiki 瀏覽」看完整內容。" : "(模擬輸出)本機版會由 Gemini 生成完整頁面內容。")
+    : (src.real ? "The four perspective pages for this source were actually generated — see them in Browse the Wiki." : "(Simulated output) The local app has Gemini generate the full page.");
+  simOut.appendChild(tail);
+  runBtn.disabled=false;
+});
+
+/* ========================================================= perspectives */
+function renderPerspectives(){
+  const grid=document.getElementById("perspGrid"); grid.innerHTML="";
+  Object.entries(AGENTS).forEach(([k,a],i)=>{
+    const d=document.createElement("div"); d.className="persp reveal on"; d.style.setProperty("--pc",a.hex);
+    d.innerHTML=`<span class="icon">${a.icon}</span><h3>${a.label}</h3><p>${LANG==="zh"?a.zh:a.en}</p>
+      <div class="open">${LANG==="zh"?"閱讀生成頁面 →":"Read the generated page →"}</div>`;
+    d.onclick=()=>{ openFile(a.file); document.getElementById("wiki").scrollIntoView({behavior:"smooth"}); };
+    grid.appendChild(d);
+  });
+}
+
+/* ========================================================= knowledge graph */
+(function(){
+  const cv=document.getElementById("graphCanvas"), ctx=cv.getContext("2d"), tip=document.getElementById("graphTip");
+  const C={raw:"#3987e5",agent:"#d95926",wiki:"#199e70",sys:"#c98500",concept:"#9085e9",hub:"#3987e5"};
+  const nodes=[
+    {id:"rawhub",label:"raw/",type:"hub",r:16,c:C.raw,d_zh:"原始資料層(不可變)",d_en:"Raw sources layer (immutable)"},
+    {id:"r1",label:"llm-wiki.md",type:"raw",r:9,c:C.raw,d_zh:"Karpathy 的原始 gist",d_en:"Karpathy's original gist",file:"raw/llm-wiki.md"},
+    {id:"r2",label:"ai-agent-workflow.md",type:"raw",r:8,c:C.raw,d_zh:"raw 來源",d_en:"raw source"},
+    {id:"r3",label:"karpathy-summary.md",type:"raw",r:8,c:C.raw,d_zh:"raw 來源",d_en:"raw source"},
+    {id:"r4",label:"llm-app-patterns.md",type:"raw",r:8,c:C.raw,d_zh:"raw 來源",d_en:"raw source"},
+    {id:"r5",label:"deliberate-practice.md",type:"raw",r:8,c:C.raw,d_zh:"raw 來源",d_en:"raw source"},
+    {id:"r6",label:"personal-crm-brief.md",type:"raw",r:8,c:C.raw,d_zh:"raw 來源",d_en:"raw source"},
+    {id:"a1",label:"Programming Agent",type:"agent",r:11,c:C.agent,d_zh:"技術架構視角",d_en:"Engineering lens"},
+    {id:"a2",label:"UI Design Agent",type:"agent",r:11,c:C.agent,d_zh:"介面與體驗視角",d_en:"Interface & UX lens"},
+    {id:"a3",label:"PM Agent",type:"agent",r:11,c:C.agent,d_zh:"目標、範疇與風險視角",d_en:"Goals, scope & risk lens"},
+    {id:"a4",label:"Personal Agent",type:"agent",r:11,c:C.agent,d_zh:"學習與反思視角",d_en:"Learning & reflection lens"},
+    {id:"w1",label:"programming/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/programming/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
+    {id:"w2",label:"ui-design/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/ui-design/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
+    {id:"w3",label:"project-mgmt/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/project-management/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
+    {id:"w4",label:"personal/llm-wiki",type:"wiki",r:10,c:C.wiki,file:"wiki/personal/llm-wiki.md",d_zh:"點擊開啟頁面",d_en:"Click to open the page"},
+    {id:"idx",label:"index.md",type:"sys",r:10,c:C.sys,file:"wiki/index.md",d_zh:"導航目錄,每次 ingest 更新",d_en:"Navigation catalog, updated on every ingest"},
+    {id:"log",label:"log.md",type:"sys",r:9,c:C.sys,d_zh:"append-only 操作時間軸",d_en:"Append-only operation timeline"},
+    {id:"cpt",label:"concepts/…",type:"concept",r:9,c:C.concept,d_zh:"跨來源主題合成頁(成長中)",d_en:"Cross-source concept pages (growing)"},
+    {id:"syn",label:"syntheses/…",type:"concept",r:9,c:C.concept,d_zh:"由 Ask 回寫的答案頁(成長中)",d_en:"Answers filed back from Ask (growing)"}
+  ];
+  const eid=id=>nodes.findIndex(n=>n.id===id);
+  const edges=[["rawhub","r1"],["rawhub","r2"],["rawhub","r3"],["rawhub","r4"],["rawhub","r5"],["rawhub","r6"],
+    ["r1","a1"],["r1","a2"],["r1","a3"],["r1","a4"],
+    ["a1","w1"],["a2","w2"],["a3","w3"],["a4","w4"],
+    ["w1","w2"],["w1","w3"],["w1","w4"],["w2","w3"],["w2","w4"],["w3","w4"],
+    ["idx","w1"],["idx","w2"],["idx","w3"],["idx","w4"],["idx","log"],
+    ["cpt","w1"],["cpt","w4"],["syn","idx"]].map(([a,b])=>[eid(a),eid(b)]);
+
+  let W,H,DPR=devicePixelRatio||1, drag=null, hover=null;
+  function resize(){ W=cv.offsetWidth; H=cv.offsetHeight||520; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  resize(); addEventListener("resize",resize);
+  nodes.forEach((n,i)=>{ n.x=W/2+Math.cos(i/nodes.length*6.283)*Math.min(W,H)*.32;
+    n.y=H/2+Math.sin(i/nodes.length*6.283)*H*.32; n.vx=0; n.vy=0; });
+
+  function tick(){
+    // forces
+    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j]; let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy||1,d=Math.sqrt(d2);
+      const rep=1900/d2; dx/=d; dy/=d;
+      a.vx-=dx*rep; a.vy-=dy*rep; b.vx+=dx*rep; b.vy+=dy*rep;
+    }
+    for(const [i,j] of edges){
+      const a=nodes[i],b=nodes[j]; let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;
+      const want=110, f=(d-want)*.004; dx/=d; dy/=d;
+      a.vx+=dx*f*d*.02; a.vy+=dy*f*d*.02; b.vx-=dx*f*d*.02; b.vy-=dy*f*d*.02;
+    }
+    for(const n of nodes){
+      n.vx+=(W/2-n.x)*.0012; n.vy+=(H/2-n.y)*.0012;
+      if(drag&&drag.node===n){ n.x=drag.x; n.y=drag.y; n.vx=n.vy=0; continue; }
+      n.vx*=.86; n.vy*=.86; n.x+=n.vx; n.y+=n.vy;
+      n.x=Math.max(30,Math.min(W-30,n.x)); n.y=Math.max(24,Math.min(H-24,n.y));
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.lineWidth=1;
+    for(const [i,j] of edges){
+      const a=nodes[i],b=nodes[j];
+      const hi = hover && (nodes[hover]===a||nodes[hover]===b);
+      ctx.strokeStyle = hi ? "rgba(255,255,255,.5)" : "rgba(137,135,129,.28)";
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    }
+    for(const n of nodes){
+      const isH = hover!==null && nodes[hover]===n;
+      ctx.beginPath(); ctx.arc(n.x,n.y,n.r+(isH?2:0),0,7);
+      ctx.fillStyle=n.c; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle="#1a1a19"; ctx.stroke();
+      if(isH){ ctx.lineWidth=1.5; ctx.strokeStyle="#fff"; ctx.stroke(); }
+      ctx.fillStyle = isH ? "#ffffff" : "#c3c2b7";
+      ctx.font=(n.type==="hub"?"600 12.5px ":"11px ")+"ui-monospace,Menlo,monospace";
+      ctx.textAlign="center";
+      ctx.fillText(n.label, n.x, n.y-n.r-7);
+    }
+  }
+  (function loop(){ tick(); draw(); requestAnimationFrame(loop); })();
+
+  function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+  function pick(p){ for(let i=nodes.length-1;i>=0;i--){ const n=nodes[i]; if(Math.hypot(p.x-n.x,p.y-n.y)<n.r+8) return i; } return null; }
+  cv.addEventListener("pointermove",e=>{
+    const p=pos(e);
+    if(drag){ drag.x=p.x; drag.y=p.y; return; }
+    hover=pick(p);
+    if(hover!==null){ const n=nodes[hover];
+      tip.innerHTML=`<div class="t">${n.label}</div><div class="d">${LANG==="zh"?n.d_zh:n.d_en}</div>`;
+      const wrap=cv.parentElement.getBoundingClientRect(), r=cv.getBoundingClientRect();
+      tip.style.left=Math.min(wrap.width-270,(r.left-wrap.left)+p.x+14)+"px";
+      tip.style.top=((r.top-wrap.top)+p.y+14)+"px";
+      tip.style.opacity=1; cv.style.cursor=n.file?"pointer":"grab";
+    } else { tip.style.opacity=0; cv.style.cursor="grab"; }
+  });
+  cv.addEventListener("pointerdown",e=>{ const p=pos(e); const i=pick(p);
+    if(i!==null){ drag={node:nodes[i],x:p.x,y:p.y,start:Date.now()}; cv.setPointerCapture(e.pointerId);} });
+  cv.addEventListener("pointerup",e=>{
+    if(drag && Date.now()-drag.start<220 && drag.node.file){
+      openFile(drag.node.file);
+      document.getElementById("wiki").scrollIntoView({behavior:"smooth"});
+    }
+    drag=null;
+  });
+  cv.addEventListener("pointerleave",()=>{ hover=null; tip.style.opacity=0; });
+})();
+
+/* ========================================================= mini markdown renderer */
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function inlineMd(s){
+  return s
+    .replace(/`([^`]+)`/g,(m,c)=>"<code>"+c+"</code>")
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+    .replace(/\*([^*]+)\*/g,"<em>$1</em>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>{
+      if(FILES[u]) return `<a href="#wiki" data-open="${u}">${t}</a>`;
+      if(/^https?:/.test(u)) return `<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+      return `<a href="#wiki">${t}</a>`;
+    });
+}
+function renderMd(md){
+  const lines=md.split("\n"); let out="",inList=false;
+  for(const raw of lines){
+    const line=esc(raw);
+    if(/^# /.test(line)){ if(inList){out+="</ul>";inList=false;} out+="<h1>"+inlineMd(line.slice(2))+"</h1>"; }
+    else if(/^## /.test(line)){ if(inList){out+="</ul>";inList=false;} out+="<h2>"+inlineMd(line.slice(3))+"</h2>"; }
+    else if(/^### /.test(line)){ if(inList){out+="</ul>";inList=false;} out+="<h2>"+inlineMd(line.slice(4))+"</h2>"; }
+    else if(/^- /.test(line)){ if(!inList){out+="<ul>";inList=true;} out+="<li>"+inlineMd(line.slice(2))+"</li>"; }
+    else if(line.trim()===""){ if(inList){out+="</ul>";inList=false;} }
+    else { if(inList){out+="</ul>";inList=false;} out+="<p>"+inlineMd(line)+"</p>"; }
+  }
+  if(inList) out+="</ul>";
+  return out;
+}
+
+/* ========================================================= wiki browser */
+let currentFile="wiki/index.md";
+function renderTree(){
+  const tree=document.getElementById("fileTree"); tree.innerHTML="";
+  const groups={ "schema": LANG==="zh"?"Schema 層":"Schema", "raw/": LANG==="zh"?"原始資料":"Raw sources", "wiki/":"wiki/" };
+  for(const [g,label] of Object.entries(groups)){
+    const h=document.createElement("div"); h.className="grp"; h.textContent=label; tree.appendChild(h);
+    Object.entries(FILES).filter(([,f])=>f.group===g).forEach(([path])=>{
+      const b=document.createElement("button"); b.className="item"+(path===currentFile?" on":"");
+      b.textContent=path.replace("wiki/","").replace("raw/","");
+      b.onclick=()=>openFile(path);
+      b.dataset.path=path;
+      tree.appendChild(b);
+    });
+  }
+}
+function openFile(path){
+  currentFile=path;
+  const f=FILES[path]; if(!f) return;
+  document.querySelectorAll("#fileTree .item").forEach(b=>b.classList.toggle("on",b.dataset.path===path));
+  const chips=document.getElementById("fmChips"); chips.innerHTML="";
+  if(f.fm){ Object.entries(f.fm).forEach(([k,v])=>{ const c=document.createElement("span"); c.className="chip"; c.textContent=k+": "+v; chips.appendChild(c); }); }
+  const view=document.getElementById("mdView");
+  view.innerHTML=renderMd(f.md);
+  view.querySelectorAll("[data-open]").forEach(a=>a.addEventListener("click",e=>{ e.preventDefault(); openFile(a.dataset.open); }));
+  const main=view.closest(".b-main"); if(main) main.scrollTop=0;
+}
+
+/* ========================================================= ask / search */
+const SUGG={zh:["cross-reference 怎麼維護?","ingest 的流程是什麼?","schema 是做什麼的?","為什麼不是 RAG?"],
+            en:["How are cross-references maintained?","What happens during ingest?","What does the schema do?","Why not RAG?"]};
+function renderSuggestions(){
+  const box=document.getElementById("askSugg"); box.innerHTML="";
+  SUGG[LANG].forEach(q=>{ const b=document.createElement("button"); b.textContent=q;
+    b.onclick=()=>{ document.getElementById("askInput").value=q; runAsk(); }; box.appendChild(b); });
+}
+const STOP=new Set(["the","a","an","is","are","what","how","why","does","do","during","not","的","是","什麼","怎麼","為","做"]);
+function runAsk(){
+  const q=document.getElementById("askInput").value.trim();
+  const res=document.getElementById("askResults"); res.innerHTML="";
+  if(!q) return;
+  const terms=q.toLowerCase().replace(/[??!!。,,]/g," ").split(/\s+/)
+    .flatMap(t=>t.length>1&&!STOP.has(t)?[t]:[])
+    .concat(["cross","ingest","schema","rag","wiki","index","lint","synthesis"].filter(t=>q.toLowerCase().includes(t)));
+  const uniq=[...new Set(terms)];
+  const hits=[];
+  for(const [path,f] of Object.entries(FILES)){
+    const paras=f.md.split(/\n\n+/);
+    for(const p of paras){
+      const pl=p.toLowerCase(); let score=0, matched=[];
+      for(const t of uniq){ if(pl.includes(t)){ score+=1; matched.push(t); } }
+      if(score>0 && p.trim().length>60 && !/^#/.test(p.trim()))
+        hits.push({path,para:p.replace(/[#*`]/g,"").trim(),score,matched});
+    }
+  }
+  hits.sort((a,b)=>b.score-a.score);
+  const top=hits.slice(0,4);
+  if(!top.length){
+    res.innerHTML=`<div class="hit"><div class="ex">${LANG==="zh"?"找不到相關段落——試試建議的問題,或換個關鍵字。":"No matching passages — try a suggested question or different keywords."}</div></div>`;
+    return;
+  }
+  top.forEach(h=>{
+    let ex=h.para.length>260?h.para.slice(0,260)+"…":h.para;
+    ex=esc(ex);
+    for(const t of h.matched){ ex=ex.replace(new RegExp("("+t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"),"<mark>$1</mark>"); }
+    const d=document.createElement("div"); d.className="hit";
+    d.innerHTML=`<div class="src">📄 ${h.path}</div><div class="ex">${ex}</div>
+      <div class="ask-actions"><a href="#wiki" data-open="${h.path}" style="font-size:.8rem">${LANG==="zh"?"開啟頁面 →":"Open page →"}</a></div>`;
+    d.querySelector("[data-open]").addEventListener("click",e=>{ e.preventDefault(); openFile(h.path); document.getElementById("wiki").scrollIntoView({behavior:"smooth"}); });
+    res.appendChild(d);
+  });
+  // archive button
+  const arch=document.createElement("button"); arch.className="btn btn-ghost"; arch.style.marginTop=".4rem";
+  arch.innerHTML=LANG==="zh"?"💾 回寫成 synthesis 頁":"💾 File back as a synthesis page";
+  arch.onclick=()=>{
+    const shelf=document.getElementById("synShelf");
+    const card=document.createElement("div"); card.className="syn-card";
+    const slug=q.toLowerCase().replace(/[^\w\u4e00-\u9fff-]+/g,"-").replace(/^-|-$/g,"").slice(0,40)||"untitled";
+    card.innerHTML=`<span class="fn">✓ wiki/syntheses/${slug}.md</span><br>${esc(q)} — ${LANG==="zh"?"已封存,探索成果回到知識庫,繼續複利。":"archived; the exploration compounds back into the knowledge base."}`;
+    shelf.appendChild(card); arch.remove();
+  };
+  res.appendChild(arch);
+}
+document.getElementById("askBtn").onclick=runAsk;
+document.getElementById("askInput").addEventListener("keydown",e=>{ if(e.key==="Enter") runAsk(); });
+
+/* ========================================================= init */
+renderTree(); renderPerspectives(); renderSuggestions(); openFile("wiki/index.md");
+</script>
+</body>
+</html>

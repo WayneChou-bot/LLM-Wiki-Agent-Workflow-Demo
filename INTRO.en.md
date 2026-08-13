@@ -1,38 +1,67 @@
 # LLM Wiki Agent Workflow Demo
 
-I've been studying Karpathy's LLM Wiki idea, so I built a small demo to show that AI Agents aren't just for answering questions - they can help maintain a knowledge base that actually grows and weaves itself together over time.
+I recently saw Andrej Karpathy mention the LLM Wiki idea and thought it was a great pattern to prototype.
 
-The core flow:
+This demo isn't trying to be another chatbot, and it isn't just RAG search. It's a different kind of knowledge workflow:
+Let AI Agents turn raw material into a Markdown wiki you can maintain, query, and compound over time.
 
-`Inputs (raw material) -> Agents (AI perspectives) -> Knowledge (compiled pages) -> Concepts (cross-source synthesis) -> Map (relationship graph) -> Ask (query the wiki) -> Maintain (health check)`
+## Core idea
 
-## What does this demo do?
+Three layers:
 
-A typical chatbot answer lives in your chat history and dissipates after use.
+- **`raw/`**: source-of-truth raw material, never rewritten
+- **`wiki/`**: Markdown knowledge pages compiled by AI Agents, with automatic cross-references
+- **`AGENTS.md`**: the schema that defines how each Agent reads, compiles, and maintains the wiki
 
-This demo shows a different workflow: feed articles, notes, meeting transcripts, and web pages to different AI Agents, and they compile them into a **durable, queryable, compounding** Markdown knowledge base - and every time you add new material, the cross-references between existing pages update automatically.
+Workflow:
 
-## Supported Agent perspectives
+1. Drop material into `raw/` (paste text, pick existing, or fetch a URL)
+2. Pick an Agent role
+3. Let the Agent ingest that material into a structured wiki page
+4. Use Concepts to weave the same theme across multiple sources into one page
+5. Query the whole wiki
+6. Archive useful answers back as synthesis pages
+
+
+## Supported Agents
+
+I started with 4 common work contexts:
 
 - **Programming Agent**: technical architecture, API integration, development patterns
 - **UI Design Agent**: interface flow, interaction design, user experience
 - **Project Manager Agent**: roadmap, task breakdown, risks and decisions
 - **Personal Knowledge Agent**: learning notes, reflection, personal knowledge management
 
-The same source can be read by different Agents from different angles, producing knowledge pages with different purposes.
+The same source can be read by different Agents from different angles, **producing wiki pages with different purposes** - this is the "multi-perspective experiment" added on top of Karpathy's original idea.
 
-## Demo features
+## Demo interface
 
-- **Inputs**: paste plain text, pick existing material, or fetch a webpage directly from a URL
-- **Agents**: pick an AI perspective and turn a source into a knowledge page (or run all 4 perspectives in one click)
-- **Knowledge**: browse grouped by source - every lens view of the same material sits together, colour-coded by perspective
-- **Concepts**: type a concept name (e.g. "ingest", "workflow") and synthesise related fragments from multiple sources into one page
-- **Map**: a node graph showing relationships between raw sources, agents, knowledge pages, and concept pages
-- **Ask**: query the compiled wiki - supports mixed English / Chinese queries
+Streamlit local web app with 8 tabs, each mapped to a clear action:
+
+- **Showcase**: opening tab that explains what the whole thing does
+- **Inputs**: where material lives - paste text / pick existing / fetch URL; **no AI runs here**
+- **Agents**: pick source + pick lens, let an AI Agent write a knowledge page
+- **Knowledge**: browse grouped by source - lens views of the same material sit together, colour-coded by perspective
+- **Concepts**: type a concept name (e.g. "ingest", "workflow"), AI weaves related fragments from multiple sources into one page
+- **Map**: node graph showing relationships between raw -> agent -> wiki page -> concept
+- **Ask**: query the whole wiki (mixed English / Chinese supported); good answers archive back as synthesis pages
 - **Maintain**: read-only health view + explicit action buttons (rebuild index / record lint), including orphan page detection
 
-The Gemini API is wired in, so Agents can actually read raw sources, write wiki pages, and cross-link to related pages as they go. Everything produced is a plain Markdown file - the whole `wiki/` folder can be opened and edited in Obsidian.
+## Why the Map exists
+
+Following Karpathy's LLM Wiki idea, the point isn't producing one-off summaries - it's **letting knowledge form a network over time**.
+
+The Map shows:
+
+- Which raw sources have been ingested
+- Which Agents produced which wiki pages
+- How wiki pages link to each other (cross-references update automatically when you ingest a new lens on the same source)
+- How concept pages stitch fragments from different sources together
+- How synthesis pages fold useful Q&A back into the wiki
+
+In short: **knowledge doesn't just live in chat history - it accumulates into a maintainable, navigable, growing Markdown knowledge system**.
+
 
 ## TL;DR
 
-This demo is about showing that AI Agents aren't just chat tools - they can turn scattered material into a **knowledge system that grows and weaves itself together**.
+The AI Agent isn't the headline - **a Markdown knowledge base that grows and weaves its own connections is the headline**. The Agent is the writer. The wiki is the work.

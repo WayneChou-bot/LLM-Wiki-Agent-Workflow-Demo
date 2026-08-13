@@ -130,3 +130,48 @@
 
 ## [2026-05-17] ingest | Personal Knowledge Agent processed LLM Wiki
 - Updated: wiki/personal/llm-wiki.md
+
+## [2026-05-17] concept | Compiled concept: workflow
+- Updated: wiki/concepts/workflow.md
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/programming/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | UI Design Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/ui-design/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Project Manager Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/project-management/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent used Gemini to process AI Agent Workflow Demo Notes
+- Updated: wiki/personal/ai-agent-workflow-demo-notes.md
+
+## [2026-05-17] ingest | Programming Agent used Gemini to process LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] ingest | UI Design Agent used Gemini to process LLM Wiki
+- Updated: wiki/ui-design/llm-wiki.md
+
+## [2026-05-17] ingest | Project Manager Agent used Gemini to process LLM Wiki
+- Updated: wiki/project-management/llm-wiki.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent used Gemini to process LLM Wiki
+- Updated: wiki/personal/llm-wiki.md
+
+## [2026-05-17] source | Added raw source: LLM Wiki
+- Created: raw/llm-wiki.md
+
+## [2026-05-17] ingest | Programming Agent processed LLM Wiki
+- Updated: wiki/programming/llm-wiki.md
+
+## [2026-05-17] ingest | UI Design Agent processed LLM Wiki
+- Updated: wiki/ui-design/llm-wiki.md
+
+## [2026-05-17] ingest | Project Manager Agent processed LLM Wiki
+- Updated: wiki/project-management/llm-wiki.md
+
+## [2026-05-17] ingest | Personal Knowledge Agent processed LLM Wiki
+- Updated: wiki/personal/llm-wiki.md

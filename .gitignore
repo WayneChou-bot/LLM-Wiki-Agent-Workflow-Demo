@@ -41,8 +41,10 @@ dist/
 影片/
 *.mp4
 *.mov
-# Personal notes (social post draft, env cheat-sheet)
+# Personal notes (social post draft, env cheat-sheet, intro drafts)
 貼文內容.txt
 conda activate llm-wiki-demo.txt
+INTRO.md
+INTRO.en.md
 # Staging area for files pending manual deletion
 _to_delete/
